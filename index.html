@@ -75,11 +75,11 @@
 </div>
 
 <div id="debug-hud">FPS: --</div>
-<div id="controls-hint">يسار الشاشة: تحرك · يمين الشاشة: انظر حولك</div>
+<div id="controls-hint">اسحب بإصبع للتحريك · إصبعين للتكبير والتصغير</div>
 <div id="game-container"></div>
 
 <!--
-  رقم الإصدار "?v=4" يمنع المتصفح من استخدام نسخة قديمة محفوظة (Cache).
+  رقم الإصدار "?v=5" يمنع المتصفح من استخدام نسخة قديمة محفوظة (Cache).
   عند تحديث أي ملف JS مستقبلاً، يكفي رفع هذا الرقم هنا فقط.
 -->
 
@@ -87,20 +87,22 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
 <!-- الأساس (Core) -->
-<script src="src/core/Config.js?v=4"></script>
-<script src="src/core/GameState.js?v=4"></script>
-<script src="src/core/Time.js?v=4"></script>
+<script src="src/core/Config.js?v=5"></script>
+<script src="src/core/GameState.js?v=5"></script>
+<script src="src/core/Time.js?v=5"></script>
 
 <!-- العالم (World) -->
-<script src="src/world/Ocean.js?v=4"></script>
-<script src="src/world/Island.js?v=4"></script>
+<script src="src/world/Ocean.js?v=5"></script>
+<script src="src/world/Island.js?v=5"></script>
 
-<!-- اللاعب (Player) — المرحلة 3 -->
-<script src="src/player/TouchControls.js?v=4"></script>
-<script src="src/player/Player.js?v=4"></script>
+<!-- الإدخال (Input) — v0.4: سحب وتكبير فقط، بدون عصا تحكم -->
+<script src="src/input/TouchControls.js?v=5"></script>
+
+<!-- الكاميرا (Camera) — v0.4: يحل محل نظام Player بالكامل -->
+<script src="src/camera/CameraController.js?v=5"></script>
 
 <!-- محرك اللعبة الرئيسي (يُحمَّل أخيرًا لأنه يستخدم كل ما سبق) -->
-<script src="src/core/Game.js?v=4"></script>
+<script src="src/core/Game.js?v=5"></script>
 
 </body>
 </html>
