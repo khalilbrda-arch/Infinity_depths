@@ -4,7 +4,7 @@
  * نقطة الدخول الرئيسية للمحرك.
  *
  * المرحلة الحالية:
- * v0.7 — Enemy System
+ * v0.8 — Wave System
  *
  * المسؤول عن:
  *  - Scene
@@ -17,6 +17,7 @@
  *  - Interaction
  *  - Base HUD
  *  - Enemy Manager
+ *  - Wave Manager
  *  - Game Loop
  *
  * لا يوجد Player.
@@ -32,7 +33,9 @@
  *   ↓
  * Interaction
  *   ↓
- * Enemies
+ * Enemies (يتجمّد عند Game Over)
+ *   ↓
+ * Waves (يدير الدورة الكاملة + يكتشف Game Over)
  *   ↓
  * UI
  *   ↓
@@ -113,15 +116,21 @@ const Game = {
     // Enemy
     // EnemyManager
     //
-    // حاليًا ننشئ عدوًا تجريبيًا واحدًا فقط.
-    // نظام Waves سيأتي في المرحلة التالية.
-    //
 
     EnemyManager.init(
       this.scene
     );
 
-    EnemyManager.spawnTestEnemy();
+    // --------------------------------
+    // Wave System
+    // --------------------------------
+    //
+    // المرحلة 7:
+    // WaveManager يتولى الآن جدولة ظهور الأعداء بالكامل
+    // (لم يعد هناك عدو تجريبي يدوي — spawnTestEnemy لم تعد تُستدعى هنا).
+    //
+
+    WaveManager.init();
 
     // --------------------------------
     // Game Time
@@ -422,6 +431,7 @@ const Game = {
     hud.textContent =
       `FPS: ${fps}` +
       ` | ${GameState.summary()}` +
+      ` | Wave: ${WaveManager.currentWave}` +
       ` | Enemies: ${enemyCount}`;
   },
 
@@ -475,10 +485,20 @@ const Game = {
     );
 
     // -----------------------------
-    // Enemies
+    // Enemies + Waves
     // -----------------------------
+    //
+    // عند Game Over: تتجمّد حركة الأعداء (لا EnemyManager.update)
+    // بينما يبقى WaveManager.update يعمل فقط لاكتشاف حالة اللعبة
+    // المنتهية (لا يجدول أي شيء جديد بهذه الحالة).
 
-    EnemyManager.update(
+    if (!WaveManager.isGameOver()) {
+      EnemyManager.update(
+        delta
+      );
+    }
+
+    WaveManager.update(
       delta
     );
 
