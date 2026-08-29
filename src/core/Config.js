@@ -9,14 +9,14 @@
 
 const CONFIG = {
   // ---------- عام ----------
-  VERSION: "0.1.0-foundation",
+  VERSION: "0.2.0-world",
 
   // ---------- الكاميرا ----------
   CAMERA: {
     FOV: 55,
     NEAR: 0.1,
     FAR: 1000,
-    START_POSITION: { x: 0, y: 8, z: 14 },
+    START_POSITION: { x: 0, y: 14, z: 24 },
   },
 
   // ---------- الإضاءة ----------
@@ -38,5 +38,15 @@ const CONFIG = {
   SKY: {
     TOP_COLOR: 0x4fa8d8,
     BOTTOM_COLOR: 0xdff3ff,
+  },
+
+  // ---------- العالم (جديد بالمرحلة 2) ----------
+  WORLD: {
+    OCEAN_SIZE: 300,
+    OCEAN_SEGMENTS: 120,
+    OCEAN_COLOR: 0x1fa3c8,
+    WAVE_AMPLITUDE: 0.35,
+    SAND_COLOR: 0xe8c67a,
+    GRASS_COLOR: 0x4caf6a,
   },
 };
