@@ -52,6 +52,19 @@
     z-index: 50;
     pointer-events: none;
   }
+  #controls-hint {
+    position: fixed;
+    bottom: 14px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-family: -apple-system, system-ui, sans-serif;
+    color: #eaf4ff;
+    font-size: 12px;
+    opacity: 0.55;
+    z-index: 45;
+    pointer-events: none;
+  }
 </style>
 </head>
 <body>
@@ -62,29 +75,32 @@
 </div>
 
 <div id="debug-hud">FPS: --</div>
+<div id="controls-hint">يسار الشاشة: تحرك · يمين الشاشة: انظر حولك</div>
 <div id="game-container"></div>
 
 <!--
-  ملاحظة مهمة: كل ملفات المشروع أدناه تحمل "?v=3" بآخر الرابط.
-  هذا رقم إصدار يدوي يمنع المتصفح من استخدام نسخة قديمة محفوظة (Cache).
-  عند تحديث أي ملف JS مستقبلاً، يكفي رفع هذا الرقم (v=4, v=5...)
-  في هذا الملف فقط ليجبر كل الأجهزة على تحميل النسخة الجديدة.
+  رقم الإصدار "?v=4" يمنع المتصفح من استخدام نسخة قديمة محفوظة (Cache).
+  عند تحديث أي ملف JS مستقبلاً، يكفي رفع هذا الرقم هنا فقط.
 -->
 
-<!-- Three.js Engine (r128, يبقى ثابت لبقية المشروع لتفادي كسر التوافق) -->
+<!-- Three.js Engine (r128، يبقى ثابت) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
 <!-- الأساس (Core) -->
-<script src="src/core/Config.js?v=3"></script>
-<script src="src/core/GameState.js?v=3"></script>
-<script src="src/core/Time.js?v=3"></script>
+<script src="src/core/Config.js?v=4"></script>
+<script src="src/core/GameState.js?v=4"></script>
+<script src="src/core/Time.js?v=4"></script>
 
 <!-- العالم (World) -->
-<script src="src/world/Ocean.js?v=3"></script>
-<script src="src/world/Island.js?v=3"></script>
+<script src="src/world/Ocean.js?v=4"></script>
+<script src="src/world/Island.js?v=4"></script>
+
+<!-- اللاعب (Player) — المرحلة 3 -->
+<script src="src/player/TouchControls.js?v=4"></script>
+<script src="src/player/Player.js?v=4"></script>
 
 <!-- محرك اللعبة الرئيسي (يُحمَّل أخيرًا لأنه يستخدم كل ما سبق) -->
-<script src="src/core/Game.js?v=3"></script>
+<script src="src/core/Game.js?v=4"></script>
 
 </body>
 </html>
