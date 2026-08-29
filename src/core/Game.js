@@ -6,6 +6,9 @@
  *
  * تحديث جذري (v0.4): لا يوجد نظام Player بعد الآن.
  * الكاميرا ثابتة الزاوية، تُدار بالكامل عبر CameraController (Pan + Zoom فقط).
+ *
+ * تحديث (v0.5): إضافة World Interaction — عناصر خريطة (صناديق/موارد) تُفتح بالنقر،
+ * عبر Interactables (العالم) + InteractionController (الربط بين النقرة والعنصر).
  */
 
 const Game = {
@@ -27,10 +30,14 @@ const Game = {
     // بناء العالم
     Ocean.create(this.scene);
     Island.create(this.scene);
+    Interactables.create(this.scene);
 
     // الإدخال والكاميرا (v0.4 — بدون شخصية لاعب)
     TouchControls.init();
     CameraController.init(this.camera);
+
+    // التفاعل مع عناصر الخريطة (v0.5)
+    InteractionController.init(this.camera);
 
     GameTime.init();
 
@@ -136,7 +143,9 @@ const Game = {
     requestAnimationFrame(() => this._loop());
     GameTime.tick();
     CameraController.update();
+    InteractionController.update();
     Ocean.update(GameTime.elapsed);
+    Interactables.update(GameTime.elapsed);
     this._updateDebugHud();
     this.renderer.render(this.scene, this.camera);
   },
