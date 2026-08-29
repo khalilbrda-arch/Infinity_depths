@@ -9,6 +9,12 @@
  *
  * تحديث (v0.5): إضافة World Interaction — عناصر خريطة (صناديق/موارد) تُفتح بالنقر،
  * عبر Interactables (العالم) + InteractionController (الربط بين النقرة والعنصر).
+ *
+ * تحديث (v0.6): إضافة DEFENSE MAP — مسار الأعداء المستقبلي، نقطة ظهور، قاعدة
+ * اللاعب (HP)، مناطق بناء (بصرية فقط بهذه المرحلة)، عبر DefenseMap (العالم) +
+ * BaseHUD (عرض HP القاعدة). لا يوجد أعداء/قتال بعد.
+ * قرار مسجَّل: لا خانات دفاع بمواقع ثابتة — الدفاعات (مرحلة 8) تُوضع بحرية بأي
+ * مكان بعيد عن المسار، عبر DefenseMap.isPositionBuildable(x, z).
  */
 
 const Game = {
@@ -31,6 +37,7 @@ const Game = {
     Ocean.create(this.scene);
     Island.create(this.scene);
     Interactables.create(this.scene);
+    DefenseMap.create(this.scene);
 
     // الإدخال والكاميرا (v0.4 — بدون شخصية لاعب)
     TouchControls.init();
@@ -38,6 +45,9 @@ const Game = {
 
     // التفاعل مع عناصر الخريطة (v0.5)
     InteractionController.init(this.camera);
+
+    // واجهة HP القاعدة (v0.6 — Defense Map)
+    BaseHUD.init();
 
     GameTime.init();
 
@@ -146,6 +156,8 @@ const Game = {
     InteractionController.update();
     Ocean.update(GameTime.elapsed);
     Interactables.update(GameTime.elapsed);
+    DefenseMap.update(GameTime.elapsed);
+    BaseHUD.update();
     this._updateDebugHud();
     this.renderer.render(this.scene, this.camera);
   },
