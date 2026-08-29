@@ -97,6 +97,35 @@ const GameState = {
   },
 
   /**
+   * هل يملك اللاعب ذهبًا كافيًا؟ (المرحلة 8 — تكلفة وضع دفاع).
+   */
+  canAfford(cost) {
+    return (
+      this.player.currency >=
+      Math.max(0, Number(cost) || 0)
+    );
+  },
+
+  /**
+   * خصم ذهب (المرحلة 8). يفشل بأمان إذا كان الرصيد غير كافٍ.
+   */
+  spendCurrency(amount) {
+    const cost =
+      Math.max(
+        0,
+        Number(amount) || 0
+      );
+
+    if (this.player.currency < cost) {
+      return false;
+    }
+
+    this.player.currency -= cost;
+
+    return true;
+  },
+
+  /**
    * مكافأة قتل عدو.
    *
    * XP الحقيقي يمكن توسيعه لاحقًا.
