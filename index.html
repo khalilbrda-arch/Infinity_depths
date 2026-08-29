@@ -79,7 +79,7 @@
 <div id="game-container"></div>
 
 <!--
-  رقم الإصدار "?v=6" يمنع المتصفح من استخدام نسخة قديمة محفوظة (Cache).
+  رقم الإصدار "?v=8" يمنع المتصفح من استخدام نسخة قديمة محفوظة (Cache).
   عند تحديث أي ملف JS مستقبلاً، يكفي رفع هذا الرقم هنا فقط.
 -->
 
@@ -87,29 +87,31 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
 <!-- الأساس (Core) -->
-<script src="src/core/Config.js?v=6"></script>
-<script src="src/core/GameState.js?v=6"></script>
-<script src="src/core/Time.js?v=6"></script>
+<script src="src/core/Config.js?v=8"></script>
+<script src="src/core/GameState.js?v=8"></script>
+<script src="src/core/Time.js?v=8"></script>
 
 <!-- الواجهة (UI) — تُحمَّل مبكرًا لأن أنظمة أخرى قد تستخدمها -->
-<script src="src/ui/Toast.js?v=6"></script>
+<script src="src/ui/Toast.js?v=8"></script>
+<script src="src/ui/BaseHUD.js?v=8"></script>
 
 <!-- العالم (World) -->
-<script src="src/world/Ocean.js?v=6"></script>
-<script src="src/world/Island.js?v=6"></script>
-<script src="src/world/Interactables.js?v=6"></script>
+<script src="src/world/Ocean.js?v=8"></script>
+<script src="src/world/Island.js?v=8"></script>
+<script src="src/world/Interactables.js?v=8"></script>
+<script src="src/world/DefenseMap.js?v=8"></script>
 
 <!-- الإدخال (Input) — v0.4: سحب وتكبير، + v0.5: كشف نقر (Tap) -->
-<script src="src/input/TouchControls.js?v=6"></script>
+<script src="src/input/TouchControls.js?v=8"></script>
 
 <!-- الكاميرا (Camera) — v0.4: يحل محل نظام Player بالكامل -->
-<script src="src/camera/CameraController.js?v=6"></script>
+<script src="src/camera/CameraController.js?v=8"></script>
 
-<!-- التفاعل (Interaction) — v0.5: يربط النقرة بعناصر الخريطة -->
-<script src="src/interaction/InteractionController.js?v=6"></script>
+<!-- التفاعل (Interaction) — v0.5: يربط النقرة بعناصر الخريطة (صناديق/موارد + مناطق بناء) -->
+<script src="src/interaction/InteractionController.js?v=8"></script>
 
 <!-- محرك اللعبة الرئيسي (يُحمَّل أخيرًا لأنه يستخدم كل ما سبق) -->
-<script src="src/core/Game.js?v=6"></script>
+<script src="src/core/Game.js?v=8"></script>
 
 </body>
 </html>
