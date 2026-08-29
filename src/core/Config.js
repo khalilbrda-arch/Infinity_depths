@@ -9,14 +9,15 @@
 
 const CONFIG = {
   // ---------- عام ----------
-  VERSION: "0.2.0-world",
+  VERSION: "0.2.1-world-camera-fix",
 
   // ---------- الكاميرا ----------
   CAMERA: {
-    FOV: 55,
+    FOV: 50,
     NEAR: 0.1,
     FAR: 1000,
-    START_POSITION: { x: 0, y: 14, z: 24 },
+    START_POSITION: { x: 0, y: 24, z: 38 },
+    LOOK_AT: { x: 0, y: 3, z: 0 },
   },
 
   // ---------- الإضاءة ----------
@@ -40,7 +41,7 @@ const CONFIG = {
     BOTTOM_COLOR: 0xdff3ff,
   },
 
-  // ---------- العالم (جديد بالمرحلة 2) ----------
+  // ---------- العالم ----------
   WORLD: {
     OCEAN_SIZE: 300,
     OCEAN_SEGMENTS: 120,
