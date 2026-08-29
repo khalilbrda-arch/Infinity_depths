@@ -11,7 +11,7 @@
 
 const CONFIG = {
   // ---------- عام ----------
-  VERSION: "0.6.1-defense-map-free-placement",
+  VERSION: "0.9-defenses-combat",
 
   // ---------- الكاميرا (ثابتة الزاوية، لا تدور، فقط سحب وتكبير) ----------
   CAMERA: {
@@ -225,5 +225,63 @@ const CONFIG = {
       QUANTITY_PER_WAVE: 1,     // +1 عدو لكل موجة
       QUANTITY_MAX: 14,         // سقف أقصى لعدد أعداء الموجة الواحدة
     },
+  },
+
+  // ---------- الدفاعات (قسم 138 بالمواصفات — المرحلة 8: DEFENSES) ----------
+  // المرحلة الأولى: نوع دفاع واحد فقط "cannon" لإثبات أن النظام الكامل يعمل:
+  // وضع حر بأي مكان على الجزيرة (يعتمد على DefenseMap.isPositionBuildable
+  // من المرحلة 5)، إحصائيات، استهداف، وهجوم فعلي (عبر ProjectileManager
+  // بالمرحلة 9). البنية Data-Driven (قسم 77): إضافة نوع دفاع جديد لاحقًا
+  // (Sniper, Freeze Tower...) تعني إضافة مُدخَل جديد هنا فقط بدون لمس
+  // Defense.js أو DefenseManager.js — قسم 98 (Content Expansion).
+  DEFENSES: {
+    // نفس ارتفاع سطح الجزيرة المستخدم بباقي الأنظمة.
+    GROUND_Y: 2,
+
+    // أقل مسافة مسموحة بين دفاعين متجاورين حتى لا يتراكبا بصريًا.
+    MIN_DISTANCE_BETWEEN: 1.6,
+
+    // قرار مسجَّل بهذه المرحلة: الوضع بالنقر (Tap-to-Place) على مكان صالح
+    // على الجزيرة، وليس سحب وإفلات (Drag & Drop). سحب/نقل دفاع موضوع
+    // بالفعل (قسم 54 بالمواصفات) مؤجَّل لمرحلة تحسين لاحقة — لا يُبنى الآن.
+    TYPES: {
+      cannon: {
+        id: "cannon",
+        name: "مدفع",
+        cost: 40,
+
+        damage: 8,
+        critChance: 0.15,
+        critMultiplier: 1.8,
+
+        range: 7,
+        fireRate: 1.1, // طلقة/ثانية
+
+        // استراتيجية الاستهداف (قسم 20): "first" = أقرب عدو لوصول القاعدة
+        // (الأبعد مسافةً على المسار) ضمن مدى الدفاع.
+        targeting: "first",
+
+        projectileSpeed: 14,
+        projectileColor: 0xffcf5c,
+
+        baseColor: 0x5a6572,
+        turretColor: 0x3a4a5a,
+        barrelColor: 0x232b33,
+        barrelLength: 0.9,
+      },
+    },
+  },
+
+  // ---------- القتال (قسم 139 بالمواصفات — المرحلة 9: COMBAT) ----------
+  // Projectiles + Damage + Critical: مُنفَّذة بالكامل هنا (Defense → Projectile
+  // → EnemyManager.damageEnemy). Armor: مُنفَّذ أصلًا بـEnemy.takeDamage منذ
+  // المرحلة 6. Status Effects: بنية عامة جاهزة بـEnemy.js (applyStatus/slow/
+  // poison) لا يستخدمها "cannon" حاليًا (بلا عنصر) — جاهزة لأنواع دفاعات
+  // مستقبلية (Freeze Tower, Poison Tower...) دون تعديل نظام الأعداء وقتها.
+  COMBAT: {
+    PROJECTILE_RADIUS: 0.14,
+
+    // أقل مسافة بين المقذوف والهدف تُعتبر بها "إصابة".
+    HIT_DISTANCE: 0.35,
   },
 };
