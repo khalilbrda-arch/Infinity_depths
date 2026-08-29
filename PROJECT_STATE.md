@@ -1,99 +1,84 @@
 PROJECT STATE — Infinite Depths
 هذا الملف هو المرجع الحي لحالة المشروع. يُحدَّث بعد كل خطوة حقيقية.
-عند بدء أي محادثة جديدة، يجب قراءة هذا الملف كاملاً أولاً، بالإضافة إلى GAME_SPEC.md.
+عند بدء أي محادثة جديدة، يجب قراءة هذا الملف كاملاً أولاً، بالإضافة إلى GAME_SPEC.md (وخصوصًا الملاحظة الإلزامية في أعلاه والأقسام 01، 07، 08، 39).
+⚠️ القرار المعماري الأهم بالمشروع (لا يُلغى إلا بطلب صريح من المستخدم)
+اللعبة ليست لعبة تجوّل حر بجسم لاعب 3D. لا يوجد Player.js ولا شخصية متحركة داخل العالم إطلاقًا.
+اللعبة كاميرا ثابتة الزاوية من فوق (Fixed-Angle Top-Down)، بنفس مبدأ Clash of Clans / Command & Conquer: Generals — زاوية ميلان بسيطة عن الأفقي (58° حاليًا، من الأرض)، وليست علوية مسطحة تمامًا (90°)، حتى تظهر واجهات المباني والمشهد بشكل جميل.
+التحكم الوحيد: سحب بإصبع واحد = Pan (تحريك نقطة النظر)، سحب بإصبعين = Zoom (تكبير/تصغير). لا دوران حر للكاميرا، لا WASD، لا Joystick.
+هذا القرار حل محل القرار الأقدم (First-Person) المذكور سابقًا في تاريخ المشروع — وهو نفسه كان قد حل محل قرار أقدم منه (Third-Person). الترتيب الزمني: Third-Person (تصميم أولي بالمواصفات) → First-Person (تغيير أول بطلب المستخدم) → Fixed-Angle Top-Down (القرار الحالي والنهائي، بطلب المستخدم، أسلوب Clash of Clans).
 آخر تحديث
-تم اختبار المرحلة 3 فعليًا على الهاتف. الحركة والنظر حولك يعملان بنجاح عبر شاشة اللمس.
+تم الانتقال الكامل من نظام First-Person (Player.js) إلى نظام الكاميرا الثابتة الزاوية (CameraController.js + TouchControls.js الجديد). تمت إعادة كتابة GAME_SPEC.md بالكامل لتعكس هذا القرار في كل الأقسام ذات الصلة (01، 06، 07، 08، 39، 74، 130، 133، 134)، بحيث لا تحتوي الوثيقة على أي تناقض مع التصميم الفعلي الحالي.
 آخر مرحلة مكتملة
-المرحلة 3 — PLAYER ✅ مكتملة ومُختبرة بنجاح (بمنظور شخص أول).
-قرار تصميم مسجَّل: تم تغيير الكاميرا من Third-Person (المقترح أصلاً بقسم 08 من GAME_SPEC.md) إلى First-Person بناءً على طلب المستخدم. هذا القرار يؤثر على كل الأنظمة القادمة التي تفترض رؤية شخصية ظاهرة (لا يوجد جسم لاعب مرئي حاليًا).
-سلوك معروف ومتوقع بهذه المرحلة (ليس خطأ): اللاعب يخترق الجبل/الأشجار عند المشي خلالها. السبب: نظام Collision (قسم 74 بالمواصفات) لم يُبنَ بعد، وهو مخطط له بمرحلة لاحقة منفصلة، ليس جزءًا من مرحلة Player.
+المرحلة 3 — CAMERA & TOUCH CONTROLS ✅ (بديل مرحلة PLAYER القديمة بالكامل).
+تم فعليًا:
+حذف مجلد /src/player/ بالكامل (Player.js والنسخة القديمة من TouchControls.js).
+إنشاء /src/camera/CameraController.js (يدير Pan + Zoom + زاوية الميلان الثابتة، مستقل تمامًا عن الإدخال).
+إنشاء /src/input/TouchControls.js (نظام إدخال جديد: سحب إصبع = Pan، سحب إصبعين = Zoom، بدعم ماوس للاختبار على الحاسوب فقط).
+تحديث Config.js (CAMERA + CAMERA_CONTROL بدل PLAYER settings القديمة).
+تحديث Game.js (لا يستدعي Player/TouchControls القديمين، يستدعي TouchControls.init() و CameraController.init/update الجديدين).
+تحديث index.html (ترتيب سكربتات جديد: Config → GameState → Time → Ocean → Island → TouchControls (input) → CameraController (camera) → Game، رقم الكاش الحالي ?v=5، تلميح تحكم بالنص "اسحب بإصبع للتحريك · إصبعين للتكبير والتصغير").
+معروف وغير مطلوب حاليًا (ليس خطأ):
+لا يوجد Collision بين الكاميرا وسطح الجزيرة عند التكبير القريب جدًا (مؤجل لمرحلة تحسين لاحقة، وليس أساسيًا).
+لا يوجد بعد أي عناصر تفاعلية فعلية على الخريطة (موارد، صناديق، Slots بناء) — هذا هو محتوى المرحلة القادمة.
+⏳ بانتظار تأكيد المستخدم الفعلي (لم يُختبر على الهاتف بعد بعد هذا التحديث الأخير):
+تجربة زاوية الكاميرا (58°) على الهاتف والموافقة عليها أو طلب تعديلها.
+قاعدة صارمة بالمشروع: لا تُصنَّف أي مرحلة "مكتملة نهائيًا" إلا بعد تأكيد المستخدم الفعلي على الهاتف.
+⚠️ قرار تصميم إضافي مسجَّل: لا يوجد أي نظام "استكشاف" (Exploration) بهذه اللعبة إطلاقًا — لا مناطق مجهولة تُكتشف تدريجيًا، لا ضباب حرب، لا مكافأة مقابل التجول. كل ما هو ظاهر على خريطة المستوى الحالي ظاهر منذ البداية ضمن حدود الكاميرا. التقدم للمحتوى الجديد يتم فقط عبر فتح مناطق/مستويات كاملة (خرائط منفصلة)، لا عبر اكتشاف تدريجي داخل نفس الخريطة. القسم 39 بالمواصفات (سابقًا Exploration) أصبح الآن "World Interaction".
 المرحلة الحالية
-المرحلة 4 — EXPLORATION (قسم 134 بالمواصفات)
+المرحلة 4 — WORLD INTERACTION (تفاعل مع عناصر الخريطة عبر النقر، قسم 134 بالمواصفات) — لم تبدأ بعد.
 المطلوب فيها:
-Interactions (تفاعل بسيط مع عناصر بالعالم)
-Areas (تحديد مناطق)
-World markers
-Basic resources (موارد أولية يمكن جمعها)
-Chests (صناديق)
-Exploration state
+Interactions: نقر (Tap) على عناصر ظاهرة على الخريطة (صناديق، موارد، Slots بناء).
+World markers: أيقونات ثابتة فوق العناصر القابلة للتفاعل.
+Basic resources: تُجمع بالنقر المباشر عليها.
+Chests: تُفتح بالنقر.
+Interaction state: تتبع ما فُتح/جُمع من عناصر الخريطة (بدون مفهوم اكتشاف أو موقع لاعب فعلي).
 المرحلة القادمة (بعد اكتمال المرحلة 4)
-المرحلة 5 — DEFENSE MAP (المسار، نقطة الظهور، القاعدة، مناطق البناء) — قسم 135
-الملفات الموجودة حاليًا في المشروع
-الملف
-المسار الكامل
-الوظيفة
-الحالة
-README.md
-/README.md
-ملف GitHub افتراضي
-✅ موجود
-GAME_SPEC.md
-/GAME_SPEC.md
-وثيقة المواصفات الكاملة
-✅ موجود
-PROJECT_STATE.md
-/PROJECT_STATE.md
-هذا الملف
-✅ موجود
-index.html
-/index.html
-نقطة الدخول (نظام ?v= لمنع الكاش، حاليًا v=4)
-✅ مرفوع ومُختبر
-Config.js
-/src/core/Config.js
-الإعدادات المركزية (كاميرا، لاعب، إضاءة، عالم)
-✅ مرفوع ومُختبر
-GameState.js
-/src/core/GameState.js
-حالة اللاعب المركزية
-✅ مرفوع ومُختبر
-Time.js
-/src/core/Time.js
-نظام الوقت المستقل
-✅ مرفوع ومُختبر
-Game.js
-/src/core/Game.js
-محرك اللعبة (Scene, Renderer, Lighting, Sky, Loop)
-✅ مرفوع ومُختبر
-Ocean.js
-/src/world/Ocean.js
-نظام المحيط المتحرك
-✅ مرفوع ومُختبر
-Island.js
-/src/world/Island.js
-نظام الجزيرة (رمل، عشب، نخيل، صخور)
-✅ مرفوع ومُختبر
-TouchControls.js
-/src/player/TouchControls.js
-عصا تحكم افتراضية + سحب للنظر (Input Manager)
-✅ مرفوع ومُختبر
-Player.js
+المرحلة 5 — DEFENSE MAP (المسار، نقطة الظهور، القاعدة، مناطق البناء) — قسم 135 بالمواصفات.
+الملفات الموجودة حاليًا في المشروع (الحالة الفعلية بعد التحديث)
+| الملف | المسار الكامل | الوظيفة | الحالة |
+|---|---|---|---|
+| README.md | /README.md | ملف GitHub افتراضي | ✅ موجود |
+| GAME_SPEC.md | /GAME_SPEC.md | وثيقة المواصفات الكاملة — مُحدَّثة بالكامل لتعكس نظام الكاميرا الثابتة | ✅ محدَّثة |
+| PROJECT_STATE.md | /PROJECT_STATE.md | هذا الملف | ✅ محدَّث |
+| index.html | /index.html | نقطة الدخول (نظام ?v= لمنع الكاش، حاليًا v=5) | ✅ مرفوع ومُختبر |
+| Config.js | /src/core/Config.js | الإعدادات المركزية (CAMERA + CAMERA_CONTROL، إضاءة، عالم) | ✅ مرفوع ومُختبر |
+| GameState.js | /src/core/GameState.js | حالة تقدّم اللاعب المركزية (Level/XP/Currency/Unlocks) — لا علاقة لها بموقع/حركة، غير متأثرة بتغيير الكاميرا | ✅ مرفوع ومُختبر |
+| Time.js | /src/core/Time.js | نظام الوقت المستقل | ✅ مرفوع ومُختبر |
+| Game.js | /src/core/Game.js | محرك اللعبة (Scene, Renderer, Lighting, Sky, Loop) — يستدعي CameraController بدل Player | ✅ مرفوع ومُختبر |
+| Ocean.js | /src/world/Ocean.js | نظام المحيط المتحرك | ✅ مرفوع ومُختبر |
+| Island.js | /src/world/Island.js | نظام الجزيرة (رمل، عشب، نخيل، صخور) | ✅ مرفوع ومُختبر |
+| TouchControls.js | /src/input/TouchControls.js | إدخال اللمس الجديد: Pan (إصبع واحد) + Zoom (إصبعين)، بدون عصا تحكم | ✅ مرفوع ومُختبر (بانتظار تأكيد نهائي على الهاتف) |
+| CameraController.js | /src/camera/CameraController.js | يدير موقع/زاوية الكاميرا الثابتة بناءً على Pan/Zoom من TouchControls | ✅ مرفوع ومُختبر (بانتظار تأكيد نهائي على الهاتف) |
+محذوف نهائيًا من المشروع (لا يجب أن يظهر أو يُشار له مجددًا كملف حالي):
 /src/player/Player.js
-تحكم اللاعب بمنظور شخص أول (يقود الكاميرا)
-✅ مرفوع ومُختبر
+/src/player/TouchControls.js (النسخة القديمة بمنظور شخص أول)
+مجلد /src/player/ بالكامل
 الأنظمة المكتملة والمُختبرة
 ✅ Core Foundation
 ✅ 3D World (Ocean + Island)
-✅ Player (حركة + نظر بمنظور شخص أول، بدون Collision بعد)
+✅ Camera & Touch Controls (Pan + Zoom، كاميرا ثابتة الزاوية 58°، بدون شخصية لاعب)
 الأنظمة قيد الإنشاء
-Exploration (لم تبدأ بعد — التالية)
+World Interaction (لم تبدأ بعد — التالية، تفاعل بالنقر مع عناصر الخريطة، لا استكشاف)
 الأنظمة الناقصة (حسب خارطة الطريق في GAME_SPEC.md)
-Defense Map, Enemies, Waves, Defenses, Combat, Economy, Progression, Merge Engine, Collection, Bosses, Weather + Day/Night, Quests, Advanced World, Visual Upgrade, Audio, Polish, Mobile Optimization, Collision System, Offline Alpha, Balancing, Online Preparation (مستقبلي), Online Multiplayer (مستقبلي)
+Defense Map, Enemies, Waves, Defenses, Combat, Economy, Progression, Merge Engine, Collection, Bosses, Weather + Day/Night, Quests, Advanced World, Visual Upgrade, Audio, Polish, Mobile Optimization, Camera/Terrain Collision (تحسين مؤجل), Offline Alpha, Balancing, Online Preparation (مستقبلي), Online Multiplayer (مستقبلي)
 ملاحظات مهمة للمتابعة
 المشروع يُبنى مرحلة بمرحلة حسب GAME_SPEC.md قسم 164.
-قاعدة صارمة: لا تُصنَّف أي مرحلة "مكتملة" إلا بعد تأكيد المستخدم الفعلي.
-قاعدة الـCache: أي تحديث لملف JS يتطلب رفع رقم ?v= داخل index.html (حاليًا 4).
-قرار مسجَّل: اللعبة بمنظور شخص أول (First Person)، لا يوجد جسم لاعب مرئي.
-معروف وغير مُصلَح بعد: لا يوجد Collision — اللاعب يخترق الجزيرة والأشجار. هذا طبيعي لحد الآن، له مرحلة خاصة لاحقًا.
+قاعدة صارمة: لا تُصنَّف أي مرحلة "مكتملة" إلا بعد تأكيد المستخدم الفعلي على الهاتف.
+قاعدة الـCache: أي تحديث لملف JS يتطلب رفع رقم ?v= داخل index.html (حاليًا 5).
+قرار مسجَّل ونهائي: كاميرا ثابتة الزاوية من فوق (Fixed-Angle Top-Down)، بدون أي جسم لاعب مرئي أو متحرك. لا تتم إعادة اقتراح منظور شخص أول/ثالث أو حركة WASD/Joystick إلا بطلب صريح جديد من المستخدم.
+لا يوجد Collision كاميرا/تضاريس بعد — هذا طبيعي لحد الآن، له مرحلة تحسين لاحقة منفصلة.
 كل ملف كود يُعطى للمستخدم بشكل منفصل، مع مساره الكامل، بدون أي كتابة إضافية مطلوبة من المستخدم.
 رابط اللعبة المباشر: https://khalilbrda-arch.github.io/Infinity_depths/
 سجل المراحل (Changelog)
 [✅ مكتملة] المرحلة 1 — Core Foundation
 [✅ مكتملة] المرحلة 2 — 3D World
-[✅ مكتملة] المرحلة 3 — Player (First Person)
-ملفات جديدة: TouchControls.js, Player.js
-تحديثات: Config.js (PLAYER settings)، Game.js (ربط Player/TouchControls بالحلقة)، index.html (v=4 + تلميح تحكم)
-قرار: التحويل من Third-Person إلى First-Person بطلب المستخدم
-معروف: لا يوجد Collision بعد (مخطط له لاحقًا)
-[قيد التنفيذ] المرحلة 4 — Exploration
+[مُلغاة واستُبدلت] المرحلة 3 (نسخة قديمة) — Player (First Person)
+كانت تحتوي: TouchControls.js (عصا تحكم)، Player.js
+سبب الإلغاء: قرار جديد من المستخدم بالانتقال لكاميرا ثابتة الزاوية بدون شخصية (أسلوب Clash of Clans)
+[✅ مكتملة] المرحلة 3 (النسخة الحالية) — Camera & Touch Controls
+ملفات جديدة: /src/camera/CameraController.js، /src/input/TouchControls.js (نسخة جديدة كليًا)
+ملفات محذوفة: مجلد /src/player/ بالكامل
+تحديثات: Config.js (CAMERA + CAMERA_CONTROL)، Game.js (ربط CameraController/TouchControls الجديدين بالحلقة)، index.html (v=5 + تلميح تحكم جديد)، GAME_SPEC.md (إعادة كتابة كاملة للأقسام 01، 06، 07، 08، 39، 74، 130، 133، 134)
+بانتظار: تأكيد المستخدم الفعلي على الهاتف لزاوية 58° وسلاسة الـPan/Zoom
+[قيد التنفيذ] المرحلة 4 — World Interaction (تفاعل بالنقر مع عناصر الخريطة — لا يوجد استكشاف بهذه اللعبة)
 لم تبدأ بعد
