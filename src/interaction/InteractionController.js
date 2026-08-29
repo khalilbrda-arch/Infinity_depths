@@ -1,45 +1,101 @@
 /**
  * InteractionController.js
  * -------------------------
- * يربط "النقرة" (من TouchControls) بـ"عناصر الخريطة" (من Interactables).
- * كل إطار: يقرأ consumeTap() من TouchControls، وإذا وُجدت نقرة، يحوّلها
- * إلى شعاع (Raycaster) من الكاميرا عبر نقطة الشاشة، ويتحقق من تقاطعه
- * مع الأجسام القابلة للتفاعل الحية فقط.
+ * يربط النقرة بعناصر العالم.
  *
- * مستقل عن الكاميرا (يقرأ موقعها فقط) وعن الإدخال (يستهلك بياناته الجاهزة)،
- * ولا يحتوي منطق مكافآت — ذلك من مسؤولية Interactables/GameState.
+ * يدعم حاليًا:
+ *  - الصناديق
+ *  - الموارد
+ *  - مناطق البناء
  */
 
 const InteractionController = {
   camera: null,
+
   _raycaster: null,
   _pointer: null,
 
   init(camera) {
     this.camera = camera;
-    this._raycaster = new THREE.Raycaster();
-    this._pointer = new THREE.Vector2();
+
+    this._raycaster =
+      new THREE.Raycaster();
+
+    this._pointer =
+      new THREE.Vector2();
   },
 
   update() {
-    const tap = TouchControls.consumeTap();
+    const tap =
+      TouchControls.consumeTap();
+
     if (!tap) return;
 
-    // تحويل إحداثيات الشاشة (CSS px) إلى NDC (-1..1) لكل من x وy.
-    this._pointer.x = (tap.x / window.innerWidth) * 2 - 1;
-    this._pointer.y = -(tap.y / window.innerHeight) * 2 + 1;
+    this._pointer.x =
+      (tap.x / window.innerWidth) * 2 - 1;
 
-    this._raycaster.setFromCamera(this._pointer, this.camera);
+    this._pointer.y =
+      -(tap.y / window.innerHeight) * 2 + 1;
 
-    const candidates = Interactables.getLiveMeshes();
-    if (candidates.length === 0) return;
+    this._raycaster.setFromCamera(
+      this._pointer,
+      this.camera
+    );
 
-    const hits = this._raycaster.intersectObjects(candidates, false);
-    if (hits.length === 0) return;
+    const candidates = [
+      ...Interactables.getLiveMeshes(),
+      ...DefenseMap.getInteractableMeshes(),
+    ];
 
-    const result = Interactables.interact(hits[0].object);
-    if (result) {
-      Toast.show(result);
+    if (candidates.length === 0) {
+      return;
+    }
+
+    const hits =
+      this._raycaster.intersectObjects(
+        candidates,
+        false
+      );
+
+    if (hits.length === 0) {
+      return;
+    }
+
+    const mesh = hits[0].object;
+
+    const owner =
+      mesh.userData.owner;
+
+    // -------------------------
+    // الصناديق والموارد
+    // -------------------------
+
+    if (owner === "interactables") {
+      const result =
+        Interactables.interact(mesh);
+
+      if (result) {
+        Toast.show(result);
+      }
+
+      return;
+    }
+
+    // -------------------------
+    // مناطق البناء
+    // -------------------------
+
+    if (owner === "defenseMap") {
+      const result =
+        DefenseMap.interact(mesh);
+
+      if (result && result.message) {
+        Toast.showMessage(
+          result.message
+        );
+      }
+
+      return;
     }
   },
 };
