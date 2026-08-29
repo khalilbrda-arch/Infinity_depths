@@ -42,6 +42,30 @@ const InteractionController = {
       this.camera
     );
 
+    // -------------------------
+    // وضع بناء الدفاعات (المرحلة 8)
+    // -------------------------
+    //
+    // أثناء وضع البناء، أي نقرة تُفسَّر كمحاولة وضع الدفاع الحالي عند
+    // نقطة الأرض المقابلة لموقع النقر — لا تتفاعل النقرة مع الصناديق/
+    // الموارد/مناطق البناء بهذه الحالة.
+
+    if (DefenseManager.isPlacing) {
+      const ground =
+        DefenseManager.getGroundIntersection(
+          this._raycaster
+        );
+
+      if (ground) {
+        DefenseManager.attemptPlace(
+          ground.x,
+          ground.z
+        );
+      }
+
+      return;
+    }
+
     const candidates = [
       ...Interactables.getLiveMeshes(),
       ...DefenseMap.getInteractableMeshes(),
