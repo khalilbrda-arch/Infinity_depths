@@ -230,8 +230,18 @@ class Enemy {
         Math.min(delta, 0.1)
       );
 
+    // المرحلة 9 — Status Effects (قسم 139): يُطبَّق أي تأثير حالة نشط
+    // (مثل سم يُنقص HP دوريًا) قبل الحركة. قد يقتل العدو هذا الإطار.
+    this._updateStatusEffects(safeDelta);
+
+    if (!this.alive) {
+      return;
+    }
+
     this.pathDistance +=
-      this.speed * safeDelta;
+      this.speed *
+      this.getSpeedMultiplier() *
+      safeDelta;
 
     const totalLength =
       EnemyPath.getTotalLength();
@@ -297,6 +307,93 @@ class Enemy {
           direction.z
         );
     }
+  }
+
+  // =========================================================
+  // STATUS EFFECTS (المرحلة 9 — قسم 23/139)
+  // =========================================================
+  //
+  // بنية عامة فقط بهذه المرحلة — لا يوجد بعد أي دفاع يستدعي applyStatus
+  // ("cannon" ضرر مباشر بلا عنصر). جاهزة لأنواع دفاعات مستقبلية
+  // (Freeze Tower → "slow"، Poison Tower → "poison") دون أي تعديل هنا.
+
+  /**
+   * إضافة/تجديد تأثير حالة.
+   * type: "slow" (value = نسبة إبطاء 0..1) أو "poison" (value = ضرر/ثانية).
+   */
+  applyStatus(type, opts = {}) {
+    if (!this.alive) {
+      return;
+    }
+
+    const duration =
+      Math.max(0, Number(opts.duration) || 0);
+
+    const value =
+      Number(opts.value) || 0;
+
+    const existing =
+      this.statusEffects.find(
+        (effect) => effect.type === type
+      );
+
+    if (existing) {
+      existing.duration =
+        Math.max(existing.duration, duration);
+
+      existing.value = value;
+    } else {
+      this.statusEffects.push({
+        type,
+        value,
+        duration,
+      });
+    }
+  }
+
+  _updateStatusEffects(delta) {
+    if (this.statusEffects.length === 0) {
+      return;
+    }
+
+    const remaining = [];
+
+    for (const effect of this.statusEffects) {
+      effect.duration -= delta;
+
+      if (effect.type === "poison") {
+        const tick = effect.value * delta;
+
+        this.hp =
+          Math.max(0, this.hp - tick);
+
+        if (this.hp <= 0 && this.alive) {
+          this.die();
+        }
+      }
+
+      if (effect.duration > 0) {
+        remaining.push(effect);
+      }
+    }
+
+    this.statusEffects = remaining;
+  }
+
+  /**
+   * مضاعف السرعة الحالي بسبب تأثيرات الإبطاء ("slow"). 1 = بلا تأثير.
+   */
+  getSpeedMultiplier() {
+    const slow =
+      this.statusEffects.find(
+        (effect) => effect.type === "slow"
+      );
+
+    if (!slow) {
+      return 1;
+    }
+
+    return Math.max(0.2, 1 - slow.value);
   }
 
   // =========================================================
