@@ -14,6 +14,16 @@ const GameOverUI = {
   show(waveReached) {
     if (this._container) return;
 
+    // إيقاف وضع بناء الدفاعات (المرحلة 8) — لا معنى لوضع دفاعات
+    // جديدة بعد تدمير القاعدة.
+    if (typeof DefenseManager !== "undefined") {
+      DefenseManager.cancelPlacement();
+    }
+
+    if (typeof DefenseUI !== "undefined") {
+      DefenseUI.disable();
+    }
+
     const container = document.createElement("div");
 
     container.id = "game-over-screen";
