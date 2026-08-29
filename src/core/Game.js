@@ -3,7 +3,7 @@
  * -------
  * نقطة الدخول الرئيسية للمحرك.
  * مسؤول عن: Scene, Camera, Renderer, Lighting, Sky, Game Loop.
- * يستدعي أنظمة العالم (Ocean, Island) لبنائها، لكن لا يحتوي منطقها الداخلي.
+ * بدءًا من المرحلة 3: الكاميرا يديرها نظام Player بالكامل (منظور شخص أول).
  */
 
 const Game = {
@@ -26,6 +26,10 @@ const Game = {
     Ocean.create(this.scene);
     Island.create(this.scene);
 
+    // اللاعب والتحكم (المرحلة 3)
+    TouchControls.init();
+    Player.init(this.camera);
+
     GameTime.init();
 
     this._hideBootScreen();
@@ -45,12 +49,7 @@ const Game = {
       c.NEAR,
       c.FAR
     );
-    this.camera.position.set(
-      c.START_POSITION.x,
-      c.START_POSITION.y,
-      c.START_POSITION.z
-    );
-    this.camera.lookAt(c.LOOK_AT.x, c.LOOK_AT.y, c.LOOK_AT.z);
+    // الموقع والدوران الفعليان يُضبطان بواسطة Player.init() بعد قليل.
   },
 
   _setupRenderer() {
@@ -134,6 +133,7 @@ const Game = {
   _loop() {
     requestAnimationFrame(() => this._loop());
     GameTime.tick();
+    Player.update(GameTime.delta);
     Ocean.update(GameTime.elapsed);
     this._updateDebugHud();
     this.renderer.render(this.scene, this.camera);
