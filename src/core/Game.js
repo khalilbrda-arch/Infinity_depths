@@ -4,7 +4,7 @@
  * نقطة الدخول الرئيسية للمحرك.
  *
  * المرحلة الحالية:
- * v0.8 — Wave System
+ * v0.9 — Defenses + Combat
  *
  * المسؤول عن:
  *  - Scene
@@ -18,6 +18,8 @@
  *  - Base HUD
  *  - Enemy Manager
  *  - Wave Manager
+ *  - Projectile Manager
+ *  - Defense Manager
  *  - Game Loop
  *
  * لا يوجد Player.
@@ -131,6 +133,30 @@ const Game = {
     //
 
     WaveManager.init();
+
+    // --------------------------------
+    // Combat System (المقذوفات)
+    // --------------------------------
+    //
+    // المرحلة 9:
+    // يجب تهيئة ProjectileManager قبل DefenseManager لأن أول دفاع قد
+    // يُوضع ويطلق مقذوفًا بنفس الإطار نظريًا.
+
+    ProjectileManager.init(
+      this.scene
+    );
+
+    // --------------------------------
+    // Defense System
+    // --------------------------------
+    //
+    // المرحلة 8:
+    // DefenseManager يتولى وضع الدفاعات وتحديثها (استهداف + إطلاق نار
+    // عبر ProjectileManager أعلاه).
+
+    DefenseManager.init(
+      this.scene
+    );
 
     // --------------------------------
     // Game Time
@@ -428,11 +454,17 @@ const Game = {
         ? EnemyManager.getAliveEnemies().length
         : 0;
 
+    const defenseCount =
+      DefenseManager.initialized
+        ? DefenseManager.getDefenses().length
+        : 0;
+
     hud.textContent =
       `FPS: ${fps}` +
       ` | ${GameState.summary()}` +
       ` | Wave: ${WaveManager.currentWave}` +
-      ` | Enemies: ${enemyCount}`;
+      ` | Enemies: ${enemyCount}` +
+      ` | Defenses: ${defenseCount}`;
   },
 
   // =========================================================
@@ -494,6 +526,21 @@ const Game = {
 
     if (!WaveManager.isGameOver()) {
       EnemyManager.update(
+        delta
+      );
+
+      // -----------------------------
+      // Defenses + Combat (المرحلتان 8 و9)
+      // -----------------------------
+      //
+      // تتجمّد مثل الأعداء تمامًا عند Game Over — لا معنى لاستمرار
+      // الدفاعات بإطلاق النار أو المقذوفات بالحركة بعد تدمير القاعدة.
+
+      DefenseManager.update(
+        delta
+      );
+
+      ProjectileManager.update(
         delta
       );
     }
