@@ -1,117 +1,253 @@
 <!DOCTYPE html>
 <html lang="ar">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Infinite Depths — أعماق اللانهاية</title>
-<style>
-  html, body {
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    background: #0a1420;
-    height: 100%;
-    width: 100%;
-  }
-  #game-container {
-    width: 100vw;
-    height: 100vh;
-  }
-  #boot-screen {
-    position: fixed;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    background: #0a1420;
-    color: #8fd3ff;
-    font-family: -apple-system, system-ui, sans-serif;
-    z-index: 100;
-  }
-  #boot-screen h1 {
-    font-size: 20px;
-    letter-spacing: 2px;
-    margin: 0 0 8px;
-  }
-  #boot-screen p {
-    font-size: 12px;
-    opacity: 0.6;
-    margin: 0;
-  }
-  #debug-hud {
-    position: fixed;
-    top: 8px;
-    left: 8px;
-    color: #7fffb0;
-    font-family: monospace;
-    font-size: 11px;
-    background: rgba(0,0,0,0.4);
-    padding: 4px 8px;
-    border-radius: 4px;
-    z-index: 50;
-    pointer-events: none;
-  }
-  #controls-hint {
-    position: fixed;
-    bottom: 14px;
-    left: 0;
-    right: 0;
-    text-align: center;
-    font-family: -apple-system, system-ui, sans-serif;
-    color: #eaf4ff;
-    font-size: 12px;
-    opacity: 0.55;
-    z-index: 45;
-    pointer-events: none;
-  }
-</style>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+  >
+
+  <title>
+    Infinite Depths — أعماق اللانهاية
+  </title>
+
+  <style>
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+
+      overflow: hidden;
+
+      background: #0a1420;
+
+      height: 100%;
+      width: 100%;
+    }
+
+    #game-container {
+      width: 100vw;
+      height: 100vh;
+    }
+
+    #boot-screen {
+      position: fixed;
+
+      inset: 0;
+
+      display: flex;
+
+      flex-direction: column;
+
+      align-items: center;
+      justify-content: center;
+
+      background: #0a1420;
+
+      color: #8fd3ff;
+
+      font-family:
+        -apple-system,
+        system-ui,
+        sans-serif;
+
+      z-index: 100;
+    }
+
+    #boot-screen h1 {
+      font-size: 20px;
+
+      letter-spacing: 2px;
+
+      margin: 0 0 8px;
+    }
+
+    #boot-screen p {
+      font-size: 12px;
+
+      opacity: 0.6;
+
+      margin: 0;
+    }
+
+    #debug-hud {
+      position: fixed;
+
+      top: 8px;
+      left: 8px;
+
+      color: #7fffb0;
+
+      font-family: monospace;
+
+      font-size: 11px;
+
+      background:
+        rgba(0, 0, 0, 0.4);
+
+      padding: 4px 8px;
+
+      border-radius: 4px;
+
+      z-index: 50;
+
+      pointer-events: none;
+    }
+
+    #controls-hint {
+      position: fixed;
+
+      bottom: 14px;
+
+      left: 0;
+      right: 0;
+
+      text-align: center;
+
+      font-family:
+        -apple-system,
+        system-ui,
+        sans-serif;
+
+      color: #eaf4ff;
+
+      font-size: 12px;
+
+      opacity: 0.55;
+
+      z-index: 45;
+
+      pointer-events: none;
+    }
+  </style>
 </head>
+
 <body>
 
-<div id="boot-screen">
-  <h1>INFINITE DEPTHS</h1>
-  <p>جارِ تحميل العالم...</p>
-</div>
+  <!-- =========================================
+       BOOT SCREEN
+  ========================================== -->
 
-<div id="debug-hud">FPS: --</div>
-<div id="controls-hint">اسحب بإصبع للتحريك · إصبعين للتكبير · انقر على العناصر للتفاعل</div>
-<div id="game-container"></div>
+  <div id="boot-screen">
 
-<!--
-  رقم الإصدار "?v=8" يمنع المتصفح من استخدام نسخة قديمة محفوظة (Cache).
-  عند تحديث أي ملف JS مستقبلاً، يكفي رفع هذا الرقم هنا فقط.
--->
+    <h1>
+      INFINITE DEPTHS
+    </h1>
 
-<!-- Three.js Engine (r128، يبقى ثابت) -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <p>
+      جارِ تحميل العالم...
+    </p>
 
-<!-- الأساس (Core) -->
-<script src="src/core/Config.js?v=8"></script>
-<script src="src/core/GameState.js?v=8"></script>
-<script src="src/core/Time.js?v=8"></script>
+  </div>
 
-<!-- الواجهة (UI) — تُحمَّل مبكرًا لأن أنظمة أخرى قد تستخدمها -->
-<script src="src/ui/Toast.js?v=8"></script>
-<script src="src/ui/BaseHUD.js?v=8"></script>
 
-<!-- العالم (World) -->
-<script src="src/world/Ocean.js?v=8"></script>
-<script src="src/world/Island.js?v=8"></script>
-<script src="src/world/Interactables.js?v=8"></script>
-<script src="src/world/DefenseMap.js?v=8"></script>
+  <!-- =========================================
+       DEBUG HUD
+  ========================================== -->
 
-<!-- الإدخال (Input) — v0.4: سحب وتكبير، + v0.5: كشف نقر (Tap) -->
-<script src="src/input/TouchControls.js?v=8"></script>
+  <div id="debug-hud">
+    FPS: --
+  </div>
 
-<!-- الكاميرا (Camera) — v0.4: يحل محل نظام Player بالكامل -->
-<script src="src/camera/CameraController.js?v=8"></script>
 
-<!-- التفاعل (Interaction) — v0.5: يربط النقرة بعناصر الخريطة (صناديق/موارد + مناطق بناء) -->
-<script src="src/interaction/InteractionController.js?v=8"></script>
+  <!-- =========================================
+       CONTROLS HINT
+  ========================================== -->
 
-<!-- محرك اللعبة الرئيسي (يُحمَّل أخيرًا لأنه يستخدم كل ما سبق) -->
-<script src="src/core/Game.js?v=8"></script>
+  <div id="controls-hint">
+    اسحب بإصبع للتحريك · إصبعين للتكبير · انقر على العناصر للتفاعل
+  </div>
+
+
+  <!-- =========================================
+       GAME CONTAINER
+  ========================================== -->
+
+  <div id="game-container"></div>
+
+
+  <!-- =========================================
+       THREE.JS
+       r128 — ثابت حسب المشروع
+  ========================================== -->
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+
+  <!-- =========================================
+       CORE
+  ========================================== -->
+
+  <script src="src/core/Config.js?v=9"></script>
+
+  <script src="src/core/GameState.js?v=9"></script>
+
+  <script src="src/core/Time.js?v=9"></script>
+
+
+  <!-- =========================================
+       UI
+  ========================================== -->
+
+  <script src="src/ui/Toast.js?v=9"></script>
+
+  <script src="src/ui/BaseHUD.js?v=9"></script>
+
+
+  <!-- =========================================
+       WORLD
+  ========================================== -->
+
+  <script src="src/world/Ocean.js?v=9"></script>
+
+  <script src="src/world/Island.js?v=9"></script>
+
+  <script src="src/world/Interactables.js?v=9"></script>
+
+  <script src="src/world/DefenseMap.js?v=9"></script>
+
+
+  <!-- =========================================
+       ENEMIES — STAGE 6
+  ========================================== -->
+
+  <script src="src/enemies/EnemyPath.js?v=9"></script>
+
+  <script src="src/enemies/Enemy.js?v=9"></script>
+
+  <script src="src/enemies/EnemyManager.js?v=9"></script>
+
+
+  <!-- =========================================
+       INPUT
+  ========================================== -->
+
+  <script src="src/input/TouchControls.js?v=9"></script>
+
+
+  <!-- =========================================
+       CAMERA
+  ========================================== -->
+
+  <script src="src/camera/CameraController.js?v=9"></script>
+
+
+  <!-- =========================================
+       INTERACTION
+  ========================================== -->
+
+  <script src="src/interaction/InteractionController.js?v=9"></script>
+
+
+  <!-- =========================================
+       MAIN GAME
+       يجب أن يكون الأخير
+  ========================================== -->
+
+  <script src="src/core/Game.js?v=9"></script>
 
 </body>
+
 </html>
