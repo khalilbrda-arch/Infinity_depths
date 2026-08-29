@@ -5,12 +5,13 @@
  *
  * يمثل عدوًا واحدًا.
  *
- * لا يعرف هذا الملف شيئًا عن Waves.
- * ولا ينشئ أعداء.
- * ولا يقرر من يستهدفه.
+ * ملاحظة:
+ * المشروع يستخدم Three.js r128،
+ * لذلك لا نستخدم CapsuleGeometry لأنها غير متوفرة
+ * في الإصدار الموجود بالمشروع.
  *
- * EnemyManager هو المسؤول عن الإدارة.
- * EnemyPath مسؤول عن المسار.
+ * النموذج الحالي Prototype فقط.
+ * سيتم استبداله بالنموذج النهائي في مرحلة الـVisual Overhaul.
  */
 
 class Enemy {
@@ -55,7 +56,7 @@ class Enemy {
 
     this.animationState = "walk";
 
-    // موقع العدو على المسار بوحدة المسافة.
+    // المسافة التي قطعها العدو على المسار.
     this.pathDistance = 0;
 
     this.alive = true;
@@ -64,54 +65,173 @@ class Enemy {
     this._buildModel();
   }
 
+  // =========================================================
+  // PROTOTYPE MODEL
+  // =========================================================
+
   _buildModel() {
-    const geometry =
-      new THREE.CapsuleGeometry(
-        0.45,
-        0.8,
-        4,
+    /*
+     * لا نستخدم CapsuleGeometry لأن المشروع على Three.js r128.
+     *
+     * بدلًا منها نصنع جسمًا بسيطًا من:
+     * Cylinder + Sphere
+     *
+     * وهذا مؤقت تمامًا إلى أن نصل إلى مرحلة الرسوم النهائية.
+     */
+
+    const group =
+      new THREE.Group();
+
+    // -------------------------
+    // Body
+    // -------------------------
+
+    const bodyGeometry =
+      new THREE.CylinderGeometry(
+        0.38,
+        0.48,
+        0.85,
         8
       );
 
-    const material =
+    const bodyMaterial =
       new THREE.MeshStandardMaterial({
         color: 0xd94a4a,
         roughness: 0.8,
         flatShading: true,
       });
 
-    this.model =
+    const body =
       new THREE.Mesh(
-        geometry,
-        material
+        bodyGeometry,
+        bodyMaterial
       );
 
-    this.model.castShadow = true;
-    this.model.receiveShadow = true;
+    body.position.y = 0.48;
 
-    this.model.userData.owner = "enemy";
-    this.model.userData.enemyId = this.id;
+    body.castShadow = true;
+    body.receiveShadow = true;
 
-    // Prototype فقط.
-    // النموذج النهائي سيُستبدل في مرحلة Visual Upgrade.
-    this.model.scale.set(
-      1,
-      1.15,
-      1
+    group.add(body);
+
+    // -------------------------
+    // Head
+    // -------------------------
+
+    const headGeometry =
+      new THREE.SphereGeometry(
+        0.42,
+        12,
+        8
+      );
+
+    const headMaterial =
+      new THREE.MeshStandardMaterial({
+        color: 0xed5a5a,
+        roughness: 0.8,
+        flatShading: true,
+      });
+
+    const head =
+      new THREE.Mesh(
+        headGeometry,
+        headMaterial
+      );
+
+    head.position.y = 1.08;
+
+    head.castShadow = true;
+    head.receiveShadow = true;
+
+    group.add(head);
+
+    // -------------------------
+    // Eyes
+    // -------------------------
+
+    const eyeGeometry =
+      new THREE.SphereGeometry(
+        0.07,
+        8,
+        6
+      );
+
+    const eyeMaterial =
+      new THREE.MeshBasicMaterial({
+        color: 0x111111,
+      });
+
+    const leftEye =
+      new THREE.Mesh(
+        eyeGeometry,
+        eyeMaterial
+      );
+
+    const rightEye =
+      new THREE.Mesh(
+        eyeGeometry,
+        eyeMaterial
+      );
+
+    leftEye.position.set(
+      -0.14,
+      1.13,
+      0.37
     );
+
+    rightEye.position.set(
+      0.14,
+      1.13,
+      0.37
+    );
+
+    group.add(leftEye);
+    group.add(rightEye);
+
+    // -------------------------
+    // Metadata
+    // -------------------------
+
+    group.userData.owner =
+      "enemy";
+
+    group.userData.enemyId =
+      this.id;
+
+    group.userData.enemy =
+      this;
+
+    this.model = group;
   }
+
+  // =========================================================
+  // OBJECT
+  // =========================================================
 
   getObject() {
     return this.model;
   }
 
+  // =========================================================
+  // UPDATE
+  // =========================================================
+
   update(delta) {
-    if (!this.alive || this.reachedBase) {
+    if (
+      !this.alive ||
+      this.reachedBase
+    ) {
       return;
     }
 
+    const safeDelta =
+      Math.max(
+        0,
+        Math.min(delta, 0.1)
+      );
+
     this.pathDistance +=
-      this.speed * delta;
+      this.speed * safeDelta;
 
     const totalLength =
       EnemyPath.getTotalLength();
@@ -124,7 +244,9 @@ class Enemy {
         totalLength;
 
       this.reachedBase = true;
-      this.animationState = "attack";
+
+      this.animationState =
+        "attack";
 
       this._updateTransform();
 
@@ -134,8 +256,14 @@ class Enemy {
     this._updateTransform();
   }
 
+  // =========================================================
+  // TRANSFORM
+  // =========================================================
+
   _updateTransform() {
-    if (!this.model) return;
+    if (!this.model) {
+      return;
+    }
 
     const position =
       EnemyPath.getPositionAtDistance(
@@ -147,9 +275,15 @@ class Enemy {
         this.pathDistance
       );
 
+    /*
+     * الأرض = Y 2
+     *
+     * العدو يقف فوق الأرض،
+     * لذلك نرفع النموذج قليلًا.
+     */
     this.model.position.set(
       position.x,
-      position.y + 0.75,
+      position.y,
       position.z
     );
 
@@ -165,6 +299,10 @@ class Enemy {
     }
   }
 
+  // =========================================================
+  // DAMAGE
+  // =========================================================
+
   takeDamage(amount) {
     if (!this.alive) {
       return {
@@ -175,8 +313,18 @@ class Enemy {
     }
 
     const rawDamage =
-      Math.max(0, amount);
+      Math.max(
+        0,
+        Number(amount) || 0
+      );
 
+    /*
+     * Armor يقلل الضرر.
+     *
+     * أقل ضرر فعلي = 1
+     * حتى لا يصبح العدو غير قابل للقتل
+     * بسبب Armor في الأنظمة المستقبلية.
+     */
     const effectiveDamage =
       Math.max(
         1,
@@ -189,7 +337,9 @@ class Enemy {
         this.hp - effectiveDamage
       );
 
-    if (this.hp <= 0) {
+    if (
+      this.hp <= 0
+    ) {
       this.die();
 
       return {
@@ -206,22 +356,49 @@ class Enemy {
     };
   }
 
+  // =========================================================
+  // DEATH
+  // =========================================================
+
   die() {
-    if (!this.alive) return;
+    if (!this.alive) {
+      return;
+    }
 
     this.alive = false;
-    this.animationState = "death";
+
+    this.animationState =
+      "death";
   }
 
+  // =========================================================
+  // HP
+  // =========================================================
+
   getHpRatio() {
-    return this.maxHp > 0
-      ? this.hp / this.maxHp
-      : 0;
+    if (
+      this.maxHp <= 0
+    ) {
+      return 0;
+    }
+
+    return (
+      this.hp /
+      this.maxHp
+    );
   }
+
+  // =========================================================
+  // BASE
+  // =========================================================
 
   hasReachedBase() {
     return this.reachedBase;
   }
+
+  // =========================================================
+  // CLEANUP
+  // =========================================================
 
   destroy() {
     if (
