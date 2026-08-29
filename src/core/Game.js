@@ -2,19 +2,41 @@
  * Game.js
  * -------
  * نقطة الدخول الرئيسية للمحرك.
- * مسؤول عن: Scene, Camera, Renderer, Lighting, Sky, Game Loop.
  *
- * تحديث جذري (v0.4): لا يوجد نظام Player بعد الآن.
- * الكاميرا ثابتة الزاوية، تُدار بالكامل عبر CameraController (Pan + Zoom فقط).
+ * المرحلة الحالية:
+ * v0.7 — Enemy System
  *
- * تحديث (v0.5): إضافة World Interaction — عناصر خريطة (صناديق/موارد) تُفتح بالنقر،
- * عبر Interactables (العالم) + InteractionController (الربط بين النقرة والعنصر).
+ * المسؤول عن:
+ *  - Scene
+ *  - Camera
+ *  - Renderer
+ *  - Lighting
+ *  - Sky
+ *  - World
+ *  - Input
+ *  - Interaction
+ *  - Base HUD
+ *  - Enemy Manager
+ *  - Game Loop
  *
- * تحديث (v0.6): إضافة DEFENSE MAP — مسار الأعداء المستقبلي، نقطة ظهور، قاعدة
- * اللاعب (HP)، مناطق بناء (بصرية فقط بهذه المرحلة)، عبر DefenseMap (العالم) +
- * BaseHUD (عرض HP القاعدة). لا يوجد أعداء/قتال بعد.
- * قرار مسجَّل: لا خانات دفاع بمواقع ثابتة — الدفاعات (مرحلة 8) تُوضع بحرية بأي
- * مكان بعيد عن المسار، عبر DefenseMap.isPositionBuildable(x, z).
+ * لا يوجد Player.
+ * الكاميرا ثابتة الزاوية وتُدار عبر CameraController.
+ *
+ * ترتيب الأنظمة:
+ *
+ * World
+ *   ↓
+ * Input
+ *   ↓
+ * Camera
+ *   ↓
+ * Interaction
+ *   ↓
+ * Enemies
+ *   ↓
+ * UI
+ *   ↓
+ * Render
  */
 
 const Game = {
@@ -24,7 +46,19 @@ const Game = {
   container: null,
 
   init() {
-    this.container = document.getElementById("game-container");
+    this.container =
+      document.getElementById("game-container");
+
+    if (!this.container) {
+      console.error(
+        "Game: #game-container غير موجود."
+      );
+      return;
+    }
+
+    // --------------------------------
+    // Engine
+    // --------------------------------
 
     this._setupScene();
     this._setupCamera();
@@ -33,134 +67,448 @@ const Game = {
     this._setupSky();
     this._setupResize();
 
-    // بناء العالم
+    // --------------------------------
+    // World
+    // --------------------------------
+
     Ocean.create(this.scene);
     Island.create(this.scene);
     Interactables.create(this.scene);
     DefenseMap.create(this.scene);
 
-    // الإدخال والكاميرا (v0.4 — بدون شخصية لاعب)
+    // --------------------------------
+    // Input
+    // --------------------------------
+
     TouchControls.init();
-    CameraController.init(this.camera);
 
-    // التفاعل مع عناصر الخريطة (v0.5)
-    InteractionController.init(this.camera);
+    // --------------------------------
+    // Camera
+    // --------------------------------
 
-    // واجهة HP القاعدة (v0.6 — Defense Map)
+    CameraController.init(
+      this.camera
+    );
+
+    // --------------------------------
+    // Interaction
+    // --------------------------------
+
+    InteractionController.init(
+      this.camera
+    );
+
+    // --------------------------------
+    // Base HUD
+    // --------------------------------
+
     BaseHUD.init();
+
+    // --------------------------------
+    // Enemy System
+    // --------------------------------
+    //
+    // المرحلة 6:
+    // EnemyPath
+    // Enemy
+    // EnemyManager
+    //
+    // حاليًا ننشئ عدوًا تجريبيًا واحدًا فقط.
+    // نظام Waves سيأتي في المرحلة التالية.
+    //
+
+    EnemyManager.init(
+      this.scene
+    );
+
+    EnemyManager.spawnTestEnemy();
+
+    // --------------------------------
+    // Game Time
+    // --------------------------------
 
     GameTime.init();
 
+    // --------------------------------
+    // Start
+    // --------------------------------
+
     this._hideBootScreen();
+
     this._loop();
   },
 
+  // =========================================================
+  // SCENE
+  // =========================================================
+
   _setupScene() {
-    this.scene = new THREE.Scene();
-    this.scene.fog = new THREE.FogExp2(0x9fd7e8, 0.015);
+    this.scene =
+      new THREE.Scene();
+
+    this.scene.fog =
+      new THREE.FogExp2(
+        0x9fd7e8,
+        0.015
+      );
   },
+
+  // =========================================================
+  // CAMERA
+  // =========================================================
 
   _setupCamera() {
-    const c = CONFIG.CAMERA;
-    this.camera = new THREE.PerspectiveCamera(
-      c.FOV,
-      window.innerWidth / window.innerHeight,
-      c.NEAR,
-      c.FAR
-    );
-    // الموقع الفعلي يُضبط بواسطة CameraController.init() بعد قليل.
+    const c =
+      CONFIG.CAMERA;
+
+    this.camera =
+      new THREE.PerspectiveCamera(
+        c.FOV,
+        window.innerWidth /
+          window.innerHeight,
+        c.NEAR,
+        c.FAR
+      );
+
+    /*
+     * CameraController.init()
+     * سيضبط الموقع والزاوية الفعلية.
+     */
   },
+
+  // =========================================================
+  // RENDERER
+  // =========================================================
 
   _setupRenderer() {
-    this.renderer = new THREE.WebGLRenderer({ antialias: true });
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
-    this.renderer.setPixelRatio(
-      Math.min(window.devicePixelRatio, CONFIG.PERFORMANCE.MAX_PIXEL_RATIO)
+    this.renderer =
+      new THREE.WebGLRenderer({
+        antialias: true,
+      });
+
+    this.renderer.setSize(
+      window.innerWidth,
+      window.innerHeight
     );
-    this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    this.container.appendChild(this.renderer.domElement);
+
+    this.renderer.setPixelRatio(
+      Math.min(
+        window.devicePixelRatio,
+        CONFIG.PERFORMANCE.MAX_PIXEL_RATIO
+      )
+    );
+
+    this.renderer.shadowMap.enabled =
+      true;
+
+    this.renderer.shadowMap.type =
+      THREE.PCFSoftShadowMap;
+
+    this.container.appendChild(
+      this.renderer.domElement
+    );
   },
+
+  // =========================================================
+  // LIGHTING
+  // =========================================================
 
   _setupLighting() {
-    const L = CONFIG.LIGHTING;
+    const L =
+      CONFIG.LIGHTING;
 
-    const hemi = new THREE.HemisphereLight(
-      L.HEMISPHERE_SKY_COLOR,
-      L.HEMISPHERE_GROUND_COLOR,
-      L.HEMISPHERE_INTENSITY
+    const hemi =
+      new THREE.HemisphereLight(
+        L.HEMISPHERE_SKY_COLOR,
+        L.HEMISPHERE_GROUND_COLOR,
+        L.HEMISPHERE_INTENSITY
+      );
+
+    this.scene.add(
+      hemi
     );
-    this.scene.add(hemi);
 
-    const sun = new THREE.DirectionalLight(L.SUN_COLOR, L.SUN_INTENSITY);
-    sun.position.set(40, 60, 20);
-    sun.castShadow = true;
-    sun.shadow.mapSize.set(1024, 1024);
-    this.scene.add(sun);
+    const sun =
+      new THREE.DirectionalLight(
+        L.SUN_COLOR,
+        L.SUN_INTENSITY
+      );
+
+    sun.position.set(
+      40,
+      60,
+      20
+    );
+
+    sun.castShadow =
+      true;
+
+    sun.shadow.mapSize.set(
+      1024,
+      1024
+    );
+
+    this.scene.add(
+      sun
+    );
   },
+
+  // =========================================================
+  // SKY
+  // =========================================================
 
   _setupSky() {
-    const S = CONFIG.SKY;
-    const skyGeo = new THREE.SphereGeometry(400, 32, 32);
-    const skyMat = new THREE.ShaderMaterial({
-      side: THREE.BackSide,
-      uniforms: {
-        topColor: { value: new THREE.Color(S.TOP_COLOR) },
-        bottomColor: { value: new THREE.Color(S.BOTTOM_COLOR) },
-      },
-      vertexShader: `
-        varying vec3 vWorldPosition;
-        void main() {
-          vec4 worldPosition = modelMatrix * vec4(position, 1.0);
-          vWorldPosition = worldPosition.xyz;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-      `,
-      fragmentShader: `
-        varying vec3 vWorldPosition;
-        uniform vec3 topColor;
-        uniform vec3 bottomColor;
-        void main() {
-          float h = normalize(vWorldPosition).y;
-          gl_FragColor = vec4(mix(bottomColor, topColor, max(pow(max(h,0.0),0.5),0.0)), 1.0);
-        }
-      `,
-    });
-    this.scene.add(new THREE.Mesh(skyGeo, skyMat));
+    const S =
+      CONFIG.SKY;
+
+    const skyGeo =
+      new THREE.SphereGeometry(
+        400,
+        32,
+        32
+      );
+
+    const skyMat =
+      new THREE.ShaderMaterial({
+        side: THREE.BackSide,
+
+        uniforms: {
+          topColor: {
+            value:
+              new THREE.Color(
+                S.TOP_COLOR
+              ),
+          },
+
+          bottomColor: {
+            value:
+              new THREE.Color(
+                S.BOTTOM_COLOR
+              ),
+          },
+        },
+
+        vertexShader: `
+          varying vec3 vWorldPosition;
+
+          void main() {
+            vec4 worldPosition =
+              modelMatrix *
+              vec4(position, 1.0);
+
+            vWorldPosition =
+              worldPosition.xyz;
+
+            gl_Position =
+              projectionMatrix *
+              modelViewMatrix *
+              vec4(position, 1.0);
+          }
+        `,
+
+        fragmentShader: `
+          varying vec3 vWorldPosition;
+
+          uniform vec3 topColor;
+          uniform vec3 bottomColor;
+
+          void main() {
+            float h =
+              normalize(
+                vWorldPosition
+              ).y;
+
+            float factor =
+              max(
+                pow(
+                  max(h, 0.0),
+                  0.5
+                ),
+                0.0
+              );
+
+            gl_FragColor =
+              vec4(
+                mix(
+                  bottomColor,
+                  topColor,
+                  factor
+                ),
+                1.0
+              );
+          }
+        `,
+      });
+
+    this.scene.add(
+      new THREE.Mesh(
+        skyGeo,
+        skyMat
+      )
+    );
   },
+
+  // =========================================================
+  // RESIZE
+  // =========================================================
 
   _setupResize() {
-    window.addEventListener("resize", () => {
-      this.camera.aspect = window.innerWidth / window.innerHeight;
-      this.camera.updateProjectionMatrix();
-      this.renderer.setSize(window.innerWidth, window.innerHeight);
-    });
+    window.addEventListener(
+      "resize",
+      () => {
+        if (
+          !this.camera ||
+          !this.renderer
+        ) {
+          return;
+        }
+
+        this.camera.aspect =
+          window.innerWidth /
+          window.innerHeight;
+
+        this.camera.updateProjectionMatrix();
+
+        this.renderer.setSize(
+          window.innerWidth,
+          window.innerHeight
+        );
+      }
+    );
   },
+
+  // =========================================================
+  // BOOT SCREEN
+  // =========================================================
 
   _hideBootScreen() {
-    const boot = document.getElementById("boot-screen");
-    if (boot) boot.style.display = "none";
+    const boot =
+      document.getElementById(
+        "boot-screen"
+      );
+
+    if (boot) {
+      boot.style.display =
+        "none";
+    }
   },
+
+  // =========================================================
+  // DEBUG HUD
+  // =========================================================
 
   _updateDebugHud() {
-    const hud = document.getElementById("debug-hud");
-    if (!hud) return;
-    const fps = GameTime.delta > 0 ? Math.round(1 / GameTime.delta) : 0;
-    hud.textContent = `FPS: ${fps} | ${GameState.summary()}`;
+    const hud =
+      document.getElementById(
+        "debug-hud"
+      );
+
+    if (!hud) {
+      return;
+    }
+
+    const fps =
+      GameTime.delta > 0
+        ? Math.round(
+            1 / GameTime.delta
+          )
+        : 0;
+
+    const enemyCount =
+      EnemyManager.initialized
+        ? EnemyManager.getAliveEnemies().length
+        : 0;
+
+    hud.textContent =
+      `FPS: ${fps}` +
+      ` | ${GameState.summary()}` +
+      ` | Enemies: ${enemyCount}`;
   },
 
+  // =========================================================
+  // MAIN LOOP
+  // =========================================================
+
   _loop() {
-    requestAnimationFrame(() => this._loop());
+    requestAnimationFrame(
+      () => this._loop()
+    );
+
+    // -----------------------------
+    // Time
+    // -----------------------------
+
     GameTime.tick();
+
+    const delta =
+      GameTime.delta;
+
+    const elapsed =
+      GameTime.elapsed;
+
+    // -----------------------------
+    // Camera
+    // -----------------------------
+
     CameraController.update();
+
+    // -----------------------------
+    // Input / Interaction
+    // -----------------------------
+
     InteractionController.update();
-    Ocean.update(GameTime.elapsed);
-    Interactables.update(GameTime.elapsed);
-    DefenseMap.update(GameTime.elapsed);
+
+    // -----------------------------
+    // World
+    // -----------------------------
+
+    Ocean.update(
+      elapsed
+    );
+
+    Interactables.update(
+      elapsed
+    );
+
+    DefenseMap.update(
+      elapsed
+    );
+
+    // -----------------------------
+    // Enemies
+    // -----------------------------
+
+    EnemyManager.update(
+      delta
+    );
+
+    // -----------------------------
+    // UI
+    // -----------------------------
+
     BaseHUD.update();
+
     this._updateDebugHud();
-    this.renderer.render(this.scene, this.camera);
+
+    // -----------------------------
+    // Render
+    // -----------------------------
+
+    this.renderer.render(
+      this.scene,
+      this.camera
+    );
   },
 };
 
-window.addEventListener("load", () => Game.init());
+
+// ===========================================================
+// BOOT
+// ===========================================================
+
+window.addEventListener(
+  "load",
+  () => {
+    Game.init();
+  }
+);
