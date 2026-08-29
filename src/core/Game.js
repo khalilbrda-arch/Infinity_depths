@@ -3,8 +3,8 @@
  * -------
  * نقطة الدخول الرئيسية للمحرك.
  * مسؤول عن: Scene, Camera, Renderer, Lighting, Sky, Game Loop.
- * هذا الملف لا يحتوي منطق لعب (Player, Enemies, Defenses) — فقط الأساس.
- * الأنظمة القادمة (المرحلة 2 وما بعدها) تُضاف كملفات منفصلة وتُسجَّل هنا.
+ * بدءًا من المرحلة 2: يستدعي أنظمة العالم (Ocean, Island) لبنائها،
+ * لكنه لا يحتوي منطقها الداخلي — فقط يربطها بحلقة اللعبة.
  */
 
 const Game = {
@@ -22,6 +22,10 @@ const Game = {
     this._setupLighting();
     this._setupSky();
     this._setupResize();
+
+    // بناء العالم (المرحلة 2)
+    Ocean.create(this.scene);
+    Island.create(this.scene);
 
     GameTime.init();
 
@@ -131,6 +135,7 @@ const Game = {
   _loop() {
     requestAnimationFrame(() => this._loop());
     GameTime.tick();
+    Ocean.update(GameTime.elapsed);
     this._updateDebugHud();
     this.renderer.render(this.scene, this.camera);
   },
