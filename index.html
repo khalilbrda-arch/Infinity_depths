@@ -58,7 +58,7 @@
 
 <div id="boot-screen">
   <h1>INFINITE DEPTHS</h1>
-  <p>جارِ تحميل الأساس...</p>
+  <p>جارِ تحميل العالم...</p>
 </div>
 
 <div id="debug-hud">FPS: --</div>
@@ -67,10 +67,16 @@
 <!-- Three.js Engine (r128, يبقى ثابت لبقية المشروع لتفادي كسر التوافق) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
-<!-- ملفات المشروع (بالترتيب) -->
+<!-- الأساس (Core) -->
 <script src="src/core/Config.js"></script>
 <script src="src/core/GameState.js"></script>
 <script src="src/core/Time.js"></script>
+
+<!-- العالم (World) — المرحلة 2 -->
+<script src="src/world/Ocean.js"></script>
+<script src="src/world/Island.js"></script>
+
+<!-- محرك اللعبة الرئيسي (يُحمَّل أخيرًا لأنه يستخدم كل ما سبق) -->
 <script src="src/core/Game.js"></script>
 
 </body>
