@@ -402,7 +402,6 @@ Abilities
 مثال:
 Cannon
 Electric Core
-=
 Electric Cannon
 لكن ليس بالضرورة أن يكون أقوى في كل شيء.
 مثال:
@@ -1216,7 +1215,7 @@ Path.
 Spawn.
 Base.
 Build zones.
-Defense slots.
+Defense placement — لا يوجد "خانات" (Slots) بمواقع ثابتة. الدفاعات تُوضع بحرية بأي مكان على الجزيرة، بشرط عدم وضعها على مسار الأعداء (Path) أو ضمن مسافة أمان قريبة منه (Path Exclusion Buffer). قرار مسجَّل — انظر أيضًا PROJECT_STATE.md.
 Wave preparation.
 136 — المرحلة 6
 ENEMIES
@@ -1239,7 +1238,7 @@ Game over.
 DEFENSES
 Defense base.
 Defense manager.
-Placement.
+Placement — وضع حر بأي مكان على الجزيرة ما عدا مسار الأعداء ومحيطه (انظر قسم 135 / DefenseMap.isPositionBuildable). لا خانات ثابتة.
 Stats.
 Targeting.
 Attack.
