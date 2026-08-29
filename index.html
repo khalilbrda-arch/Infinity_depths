@@ -64,20 +64,27 @@
 <div id="debug-hud">FPS: --</div>
 <div id="game-container"></div>
 
+<!--
+  ملاحظة مهمة: كل ملفات المشروع أدناه تحمل "?v=3" بآخر الرابط.
+  هذا رقم إصدار يدوي يمنع المتصفح من استخدام نسخة قديمة محفوظة (Cache).
+  عند تحديث أي ملف JS مستقبلاً، يكفي رفع هذا الرقم (v=4, v=5...)
+  في هذا الملف فقط ليجبر كل الأجهزة على تحميل النسخة الجديدة.
+-->
+
 <!-- Three.js Engine (r128, يبقى ثابت لبقية المشروع لتفادي كسر التوافق) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
 <!-- الأساس (Core) -->
-<script src="src/core/Config.js"></script>
-<script src="src/core/GameState.js"></script>
-<script src="src/core/Time.js"></script>
+<script src="src/core/Config.js?v=3"></script>
+<script src="src/core/GameState.js?v=3"></script>
+<script src="src/core/Time.js?v=3"></script>
 
-<!-- العالم (World) — المرحلة 2 -->
-<script src="src/world/Ocean.js"></script>
-<script src="src/world/Island.js"></script>
+<!-- العالم (World) -->
+<script src="src/world/Ocean.js?v=3"></script>
+<script src="src/world/Island.js?v=3"></script>
 
 <!-- محرك اللعبة الرئيسي (يُحمَّل أخيرًا لأنه يستخدم كل ما سبق) -->
-<script src="src/core/Game.js"></script>
+<script src="src/core/Game.js?v=3"></script>
 
 </body>
 </html>
