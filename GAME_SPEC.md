@@ -1,453 +1,504 @@
-MASTER GAME SPECIFICATION
-INFINITE DEPTHS — أعماق اللانهاية
-الإصدار الرئيسي: 1.0
-نوع المشروع: 3D Mobile-First Strategy / Tower Defense / Base Building / Combat
-الوضع الأول: Offline PvE
-الوضع المستقبلي: Online PvP / Cooperative
-الهدف: بناء لعبة تجارية قابلة للتوسع لسنوات
-⚠️ ملاحظة إلزامية قبل قراءة أي شيء آخر:
-اللعبة كاميرا ثابتة الزاوية من فوق (Fixed-Angle Top-Down، أسلوب Clash of Clans)، تُحرَّك بالسحب (Pan) والتكبير/التصغير (Zoom) فقط. لا يوجد جسم لاعب متحرك، لا منظور شخص أول ولا ثالث، لا WASD ولا Joystick. لا يوجد أيضًا أي نظام "استكشاف" (Exploration) — لا مناطق مجهولة تُكتشف تدريجيًا، لا ضباب حرب، لا مكافأة مقابل التجول (انظر القسم 39). أي فقرة لاحقة بهذه الوثيقة تصف "اللاعب يمشي/يتجول/يستكشف بجسم 3D" هي وصف قديم مُلغى — التفاصيل الكاملة والنهائية بالأقسام 01، 07، 08، 39. راجع أيضًا PROJECT_STATE.md دائمًا قبل البدء بأي عمل.
-00 — القاعدة الأساسية للمشروع
-هذه الوثيقة هي المرجع الرئيسي لبناء اللعبة.
-يجب اعتبار اللعبة مشروعًا حقيقيًا طويل الأمد، وليس Prototype مؤقتًا.
-يجب أن تكون جميع الأنظمة:
-Modular
-قابلة للتوسع
-قابلة لإعادة الاستخدام
-قابلة للاختبار
-منفصلة المسؤوليات
-قابلة للاستبدال
-مناسبة للأجهزة المحمولة
-لا يجب التضحية بالـArchitecture من أجل إضافة Feature بسرعة.
-01 — الرؤية العامة
-اسم اللعبة:
-أعماق اللانهاية
-Infinite Depths
-الفكرة:
-⚠️ قرار تصميم نهائي مسجَّل (يُلغي أي وصف لاحق بهذه الوثيقة يفترض تجوّل اللاعب بجسم ثلاثي الأبعاد):
-اللعبة ليست لعبة تجوّل حر بمنظور شخص أول/ثالث. لا يوجد جسم لاعب (Player Character) داخل العالم إطلاقًا.
-العالم ثلاثي الأبعاد حقيقي (WebGL / Three.js)، لكن اللاعب يشاهده من "فوق"، بكاميرا ثابتة الزاوية (Fixed-Angle Camera)، بنفس مبدأ ألعاب مثل Clash of Clans / Command & Conquer: General ZeroHour. زاوية ميلان صغيرة عن الأفقي (وليست علوية 90° تمامًا) حتى تظهر واجهات المباني والمشهد بشكل جميل بدل خريطة مسطحة.
-تحكم اللاعب بالكاميرا فقط:
-سحب بإصبع واحد (Pan) لتحريك نقطة النظر فوق الخريطة/الجزيرة.
-سحب بإصبعين (Pinch) للتكبير والتصغير (Zoom).
-لا دوران حر للكاميرا حول محاورها، ولا تحكم بزاوية الميلان أثناء اللعب العادي (الزاوية ثابتة بالتصميم، تُضبط فقط من Config للمطوّر).
-اللاعب يتفاعل مع العالم عبر النقر (Tap) مباشرة على عناصر ظاهرة أمامه على الخريطة — وليس عبر تحريك شخصية داخل العالم أو "اكتشاف" مناطق مجهولة. مثال: النقر على صندوق كنز لفتحه، النقر على مورد لجمعه، النقر على Slot بناء لوضع دفاع فيه، النقر على منطقة/مستوى جديد بخريطة العالم للانتقال إليه.
-⚠️ لا يوجد نظام "استكشاف" (Exploration) بهذه اللعبة بأي شكل — لا مناطق مجهولة تُكتشف تدريجيًا، ولا ضباب حرب (Fog of War)، ولا مكافآت مقابل "التجول". كل ما هو ظاهر على الخريطة، ظاهر منذ البداية ضمن حدود الكاميرا (Pan Bounds)؛ والتقدم يتم عبر فتح مناطق/مستويات جديدة بالكامل (كخريطة عالم منفصلة تُفتح بالمستوى)، وليس عبر استكشاف تدريجي داخل نفس المنطقة.
-يصل اللاعب إلى مناطق دفاعية تحتوي على طريق تسير عليه موجات الأعداء تلقائيًا.
-اللاعب:
-يجمع الموارد (بالنقر على عناصر الخريطة).
-يبني الدفاعات.
-ينقل الدفاعات (سحب وإفلات Drag & Drop على الخريطة).
-يطورها.
-يفك تركيبها.
-يركبها مع بعضها.
-يختبر تشكيلات مختلفة.
-يدافع عن قاعدته.
-ومع تقدم اللعبة يصبح قادرًا على الهجوم على قواعد/مناطق أخرى (خرائط منفصلة تُفتح بالتقدم).
-02 — هوية اللعبة
-اللعبة ليست Tower Defense تقليدية.
-هي مزيج من:
-Fixed-Camera Base Building
-Tower Defense
-Strategy
-Defense Construction
-Free Combination System
-Progression
-PvE
-Future PvP
-03 — الحلقة الأساسية Gameplay Loop
-الحلقة الأساسية:
-إدارة القاعدة (عرض الخريطة عبر الكاميرا الثابتة)
-↓
-جمع موارد
-↓
-العثور على دفاعات / شراء دفاعات
-↓
-بناء التشكيلة
-↓
-بدء الموجة
-↓
-الأعداء يسيرون على الطريق
-↓
-الدفاعات تهاجم
-↓
-قتل الأعداء
-↓
-الحصول على Rewards
-↓
-تطوير الدفاعات
-↓
-فتح دفاعات جديدة
-↓
-تجربة Combinations
-↓
-إعادة بناء التشكيلة
-↓
-مواجهة موجات أقوى
-↓
-فتح مناطق جديدة
-↓
-مواجهة Boss
-↓
-التقدم إلى منطقة جديدة
-04 — العالم
-العالم ثلاثي الأبعاد.
-ليس مجرد شاشة واحدة.
-يحتوي العالم على:
-مناطق.
-جزر.
-طرق.
-قواعد.
-ممرات.
-مباني.
-موارد.
-أسرار.
-مناطق مقفلة.
-مناطق قابلة للفتح لاحقًا (خرائط/مستويات منفصلة، تُفتح بالتقدم — لا تُكتشف تدريجيًا داخل نفس الخريطة).
-الكاميرا الثابتة الزاوية تعرض المنطقة/المستوى الحالي بالكامل ضمن حدودها (Pan Bounds)؛ اللاعب يحرّكها (Pan/Zoom) لمشاهدة تفاصيل ما هو ظاهر أمامه، وليس لاكتشاف مناطق مجهولة (لا تحرّك جسم لاعب داخلها — انظر القسم 01).
-05 — نظام المناطق
-كل منطقة لها:
-اسم.
-مستوى مطلوب.
-شروط فتح.
-بيئة.
-أعداء.
-موارد.
-Boss.
-مستوى صعوبة.
-أنواع دفاعات مناسبة.
-أسرار.
-فتح المناطق تدريجي.
-أمثلة:
-الخليج الهادئ
-منطقة البداية.
-الشعاب المرجانية
-تفتح بعد تقدم اللاعب.
-المياه العميقة
-تحتاج معدات ومستوى أعلى.
-جزيرة الضباب
-منطقة نادرة.
-أعماق الليل
-مرتبطة بوقت العالم.
-الخندق المظلم
-منطقة Endgame مستقبلية.
-06 — Player
-لا يوجد جسم لاعب 3D داخل العالم (انظر القرار المسجَّل في القسم 01). "Player" هنا يعني حالة تقدم اللاعب فقط (Progression State)، وليس كيانًا متحركًا بالمشهد.
-خصائصه:
-Level
-XP
-Currency
-Rank
-Inventory
-Equipment
-Unlocked Areas
-Unlocked Defenses
-Collection Progress
-لا Position ولا Rotation ولا Movement Speed لشخصية — لأنه لا توجد شخصية. (موقع/زووم الكاميرا نفسها موصوف بالقسم 08).
-07 — التحكم بالكاميرا (بديل قسم "الحركة")
-لا يوجد WASD ولا Virtual Joystick ولا أي تحريك لشخصية.
-التحكم الوحيد المتاح للاعب هو تحريك الكاميرا فوق العالم:
-Pan (سحب بإصبع واحد): يحرّك نقطة نظر الكاميرا أفقيًا فوق الأرض، ضمن حدود محددة (PAN_BOUNDS) حتى لا يبتعد اللاعب عن الجزيرة/القاعدة.
-Zoom (سحب بإصبعين / Pinch): يقرّب أو يبعّد الكاميرا عن نقطة النظر، ضمن مدى محدود (DISTANCE_MIN → DISTANCE_MAX).
-على الحاسوب (لأغراض الاختبار فقط، لا يظهر كخيار رسمي للاعب): سحب بالماوس = Pan، عجلة الماوس = Zoom.
-يجب أن يكون التحكم:
-Smooth (حركة كاميرا سلسة، بدون قفزات).
-Responsive (استجابة فورية للمس).
-Mobile optimized.
-لا تسارع مفاجئ أو تباطؤ ثقيل عند السحب.
-08 — الكاميرا
-Fixed-Angle Top-Down Camera (وليست Third Person تتبع لاعبًا — لا يوجد لاعب لتتبعه).
-مبدأ التصميم: منظور شبيه بـ Clash of Clans / Command & Conquer: Generals — كاميرا ثابتة الزاوية تنظر للخريطة من فوق بميلان بسيط، وليس منظورًا علويًا مسطحًا (90°) بلا عمق بصري.
-خصائصها:
-زاوية ميلان ثابتة عن الأرض (TILT_ANGLE_DEG)، تُضبط مرة واحدة من Config ولا تتغير أثناء اللعب العادي. القيمة الحالية المعتمدة: 58°.
-لا Orbit حر ولا Vertical/Horizontal Rotation يتحكم بها اللاعب — فقط Pan (تحريك نقطة النظر) و Zoom (تغيير المسافة).
-Smoothing في حركة الـPan والـZoom لتفادي أي إحساس بالاهتزاز أو القفز.
-حدود حركة (Pan Bounds) تمنع الكاميرا من مغادرة منطقة اللعب.
-Collision الخاص بالكاميرا مع التضاريس (منع دخولها تحت سطح الجزيرة عند التكبير القريب) يُضاف لاحقًا كتحسين، وليس شرطًا أساسيًا بالمرحلة الأولى.
-الهاتف: سحب بإصبع واحد لأي مكان على الشاشة = Pan. سحب بإصبعين = Zoom. لا حاجة لتخصيص جزء معيّن من الشاشة (بخلاف تصميم Swipe لمنظور شخص أول القديم).
-09 — العالم التفاعلي
-العالم ليس ديكورًا فقط.
-يمكن لاحقًا التفاعل مع:
-Buildings
-Resources
-NPCs
-Chests
-Doors
-Portals
-Areas
-Defensive Stations
-Shops
-10 — قاعدة اللاعب
-لكل منطقة دفاعية قاعدة.
-القاعدة:
-لها HP.
-يمكن تطويرها.
-يمكن تدميرها.
-لها مظهر.
-تحتوي على Slots دفاعية.
-لها دفاعات خاصة لاحقًا.
-إذا وصل الأعداء إليها:
-يبدأون بتدميرها.
-إذا وصل HP إلى صفر:
-Game Over.
-11 — Enemy Path System
-الأعداء لا يتحركون بحرية في الوضع الأساسي.
-لديهم:
-Path.
-الـPath عبارة عن نقاط مرتبة.
-Enemy:
-Spawn
-↓
-Path Point 1
-↓
-Path Point 2
-↓
-Path Point 3
-↓
-Base
-يجب أن يكون Path System مستقلًا عن Enemy AI.
-12 — Enemy System
-كل عدو له:
-ID
-Name
-Type
-HP
-Max HP
-Speed
-Armor
-Resistance
-Reward
+Infinity Depths — Game Specification
+
+«Design Truth: This document defines what Infinity Depths is supposed to be.
+It describes intended game design, not necessarily what is currently implemented.»
+
+Project: Infinity Depths
+Version: 1.0 Design Specification
+Date: 2026-09-02
+Primary Mode: Offline PvE
+Future Modes: Online PvP / Co-op
+
+---
+
+1. Vision
+
+Infinity Depths is a long-term 3D mobile-first strategy game combining:
+
+- Tower Defense
+- Base Building
+- Real-Time Combat
+- Defense Collection
+- Defense Upgrades
+- Merge Systems
+- Progression
+- Boss Encounters
+- World Systems
+- Quests
+- Long-term Content Expansion
+
+The game must be designed so that new content can be added without repeatedly rewriting the underlying gameplay architecture.
+
+The project is intended to scale from a prototype into a commercially viable large game.
+
+---
+
+2. Core Player Experience
+
+The primary gameplay loop is:
+
+Enter Level
+    ↓
+Observe Battlefield
+    ↓
+Place Defenses
+    ↓
+Enemies Spawn
+    ↓
+Combat Begins
+    ↓
+Defenses Attack
+    ↓
+Player Manages Battlefield
+    ↓
+Enemies Are Defeated
+    ↓
+Rewards Are Earned
+    ↓
+Economy / Progression Changes
+    ↓
+Next Wave
+    ↓
+Boss / Completion
+    ↓
+Save Progress
+
+The player experience should feel:
+
+- Strategic
+- Responsive
+- Clear
+- Satisfying
+- Progression-driven
+- Mobile-friendly
+- Easy to understand
+- Deep enough for long-term mastery
+
+---
+
+3. Platform Philosophy
+
+Infinity Depths is Mobile-First.
+
+All core interactions must work naturally with touch.
+
+Desktop/browser support may exist, but desktop controls must not dictate the fundamental game design.
+
+Primary interaction:
+
+Tap
+
+Secondary interactions:
+
+- Drag for camera pan
+- Pinch or equivalent gesture for zoom
+- UI touch interactions
+
+---
+
+4. Camera
+
+The game uses a fixed-angle top-down perspective.
+
+Target angle:
+
+Approximately 58°
+
+The camera is not a player character camera.
+
+The player sees the battlefield from above and interacts directly with it.
+
+---
+
+5. Camera Controls
+
+Supported:
+
+- Pan
+- Zoom
+
+Not supported as core controls:
+
+- WASD movement
+- Character movement
+- First-person movement
+- Third-person character control
+- Joystick-controlled character
+
+Camera boundaries must prevent the player from leaving the playable battlefield.
+
+Zoom must have reasonable minimum and maximum limits.
+
+---
+
+6. Player Character
+
+There is no traditional player avatar required for the core gameplay.
+
+The player exists as the strategic controller of the battlefield.
+
+Therefore:
+
+- No player body
+- No character movement
+- No character collision as a gameplay requirement
+- No character combat controller
+- No first-person gameplay
+
+Future narrative systems may represent the player through UI, NPCs, commanders, or other abstract systems without changing the core camera philosophy.
+
+---
+
+7. World Visibility
+
+Infinity Depths does not use exploration as a core mechanic.
+
+The player should be able to see the relevant playable map.
+
+There is no mandatory:
+
+- Fog of War
+- Hidden battlefield exploration
+- Player-controlled exploration character
+
+Progression may unlock:
+
+- New maps
+- New levels
+- New regions
+- New environments
+
+But the current playable battlefield itself is not hidden behind exploration.
+
+---
+
+8. Battlefield
+
+Each level contains a battlefield with:
+
+- Base
+- Enemy paths
+- Placement area
+- Environmental elements
+- Resources/interactables where appropriate
+- Spawn points
+- Enemy routes
+- Strategic positions
+
+The battlefield must remain readable on mobile screens.
+
+---
+
+9. Base
+
+The player's base is a central gameplay objective.
+
+The base has:
+
+- Health
+- Maximum health
+- Damage state
+- Defeat condition
+
+Enemies can damage the base when they successfully reach the appropriate destination.
+
+If base health reaches zero:
+
+The level is lost.
+
+---
+
+10. Enemies
+
+Enemies are independent gameplay entities.
+
+Enemy definitions should eventually be data-driven.
+
+An enemy may contain:
+
+- Health
+- Maximum health
+- Movement speed
+- Damage
+- Defense/resistance
+- Targeting behavior
+- Status effects
+- Rewards
+- Rarity/type
+- Special abilities
+- Visual identity
+
+Future enemy types must be addable without rewriting EnemyManager.
+
+---
+
+11. Enemy Paths
+
+Enemies generally follow defined routes toward the player's objective.
+
+Pathing must support:
+
+- Spawn
+- Route following
+- Progress toward base
+- Arrival
+- Base damage
+- Death
+- Future special movement behaviors
+
+Future advanced path types may include:
+
+- Multiple routes
+- Branching routes
+- Flying enemies
+- Burrowing enemies
+- Teleporting enemies
+- Boss-specific movement
+
+These must be added through controlled architecture.
+
+---
+
+12. Waves
+
+Levels are divided into enemy waves.
+
+A wave may define:
+
+- Enemy composition
+- Enemy quantity
+- Spawn timing
+- Spawn positions
+- Difficulty
+- Special modifiers
+- Rewards
+
+Wave progression should be deterministic when the level requires deterministic behavior.
+
+Future content may support procedural or event-driven waves.
+
+---
+
+13. Defense System
+
+Defenses are the primary strategic tools of the player.
+
+The game should eventually support a large number of defense types.
+
+Target scale:
+
+Hundreds of distinct defense/content definitions over the lifetime of the project.
+
+The architecture must therefore be data-driven.
+
+---
+
+14. Defense Placement
+
+Current intended interaction:
+
+Tap-to-Place
+
+The player:
+
+1. Selects a defense.
+2. Enters placement mode.
+3. Taps a valid location.
+4. Defense is placed.
+5. Cost is paid.
+
+Placement is:
+
+Free placement
+
+It is not based on fixed defense slots.
+
+---
+
+15. Defense Movement
+
+Moving already-placed defenses is intentionally deferred from the current foundation.
+
+Future implementation may support:
+
+- Tap to select
+- Drag to move
+- Valid-position preview
+- Collision/placement validation
+- Cost-free repositioning or cost-based repositioning depending on final balance
+
+This must not be implemented prematurely.
+
+---
+
+16. Defense Properties
+
+A defense may eventually define:
+
+- Damage
+- Attack speed
+- Range
+- Targeting mode
+- Projectile type
+- Projectile speed
+- Critical chance
+- Critical multiplier
+- Element
+- Traits
+- Status effects
+- Splash radius
+- Piercing
+- Chain behavior
+- Upgrade level
+- Rarity
+- Merge eligibility
+- Visual ID
+- Audio ID
+- VFX ID
+
+Not every defense must use every property.
+
+---
+
+17. Targeting
+
+Defenses may support different targeting rules, such as:
+
+- Nearest enemy
+- First enemy
+- Last enemy
+- Strongest enemy
+- Weakest enemy
+- Lowest-health enemy
+- Highest-health enemy
+- Flying-only
+- Ground-only
+- Special target conditions
+
+Targeting must be configurable rather than hard-coded individually into every defense.
+
+---
+
+18. Combat
+
+Combat is real-time.
+
+Typical flow:
+
+Defense
+    ↓
+Target Selection
+    ↓
+Attack Decision
+    ↓
+Projectile / Attack
+    ↓
+Hit Detection
+    ↓
 Damage
-Target
+    ↓
 Status Effects
-Model
-Animation state
-أنواع مستقبلية:
-Basic Fast Tank Flying Shielded Healer Swarm Stealth Splitter Boss
-13 — Wave System
-الموجات تتكون من:
-Wave Number
-Spawn Groups
-Enemy Types
-Spawn Delay
-Quantity
-Difficulty Modifier
-Reward Modifier
-كل Wave يمكن أن تكون مختلفة.
-14 — Difficulty Scaling
-لا نريد فقط:
-Enemy HP × 2
-يجب أن يتغير:
-HP
-Speed
-Armor
-Resistance
-Quantity
-Composition
-Special Abilities
-حتى تصبح الموجات أكثر استراتيجية.
-15 — Defense System
-الدفاعات هي قلب اللعبة.
-كل Defense عبارة عن كيان مستقل.
-له:
-ID
-Name
-Category
-Level
-Damage
-Fire Rate
-Range
-Targeting
-Projectile
-Cost
-Rarity
-Traits
-Modules
-Abilities
-Element
-Upgrade Data
-Merge Data
-16 — أنواع الدفاعات
-أمثلة:
-Cannon
-Machine Gun
-Sniper
-Mortar
-Tesla
-Freeze Tower
-Flame Tower
-Missile Launcher
-Poison Tower
-Laser Tower
-Healing Tower
-Support Tower
-Slow Tower
-Area Tower
-لكن القائمة ليست ثابتة.
-يجب أن يسمح النظام بإضافة مئات الأنواع.
-17 — الدفاعات ليست متساوية
-لا يوجد Defense أفضل دائمًا.
-كل Defense له:
-Strengths
-و
-Weaknesses.
-مثال:
-Cannon:
-Damage
-Fire Rate
-Sniper:
-Range
-Critical
-Slow
-Freeze:
-Crowd Control
-Damage
-18 — نظام Traits
-الدفاع يمكن أن يمتلك Traits.
-مثال:
-Burning
-Frozen
-Electric
-Piercing
-Explosive
-Rapid
-Heavy
-LongRange
-Critical
-Poisonous
-Chain
-Area
-ShieldBreaker
-BossHunter
-19 — نظام العناصر
-عناصر مستقبلية:
-Fire
-Ice
-Electric
-Poison
-Water
-Wind
-Earth
-Dark
-Light
-Void
-يمكن أن تؤثر العناصر على:
-Damage.
-Status.
-Enemy resistance.
-Merge results.
-20 — نظام الاستهداف
-الدفاع يستطيع اختيار:
-First
-Last
-Nearest
-Strongest
-Weakest
-Lowest HP
-Highest HP
-Boss
-Flying
-Special
-ويجب أن يكون Targeting System مستقلًا.
-21 — نظام المقذوفات
-Projectile System مستقل.
-يدعم:
-Bullet
-Missile
-Laser
-Explosion
-Chain
-Area effect
-Homing
-Piercing
-22 — Combat System
-نظام Combat موحد.
-يجب أن يدعم:
-Damage
-Critical Damage
-Armor
-Resistance
-Elemental Damage
-Status Effects
-Healing
-Shield
-Damage Over Time
-Area Damage
-23 — Status Effects
-أمثلة:
-Burn
-Freeze
-Slow
-Poison
-Shock
-Bleed
-Weakness
-ArmorBreak
-Stun
-Silence
-24 — نظام الدمج الأساسي
-هذا أحد أهم أنظمة اللعبة.
-لا نريد:
-A + B = C فقط.
-بل:
-كل Defense يمكن أن يمتلك:
-Base
-Modules
-Traits
-Elements
-Modifiers
-Abilities
-25 — Free Merge System
-يمكن للاعب تركيب دفاع مع دفاع آخر.
-مثال:
-Cannon
-Electric Core
-Electric Cannon
-لكن ليس بالضرورة أن يكون أقوى في كل شيء.
-مثال:
-+Chain Damage
--Range
-26 — Trade-Off System
-الدمج يمكن أن يعطي:
-ميزة
-مقابل
-عيب.
-مثال:
-+50% Damage
--30% Fire Rate
-أو:
-+Range
--Projectile Speed
-أو:
-+Slow
--Damage
-هذا يمنع وجود Combination واحد يهيمن على اللعبة.
-27 — Merge Compatibility
-ليس كل Combination متساويًا.
-يمكن أن تكون هناك:
-Perfect Synergy
-Good Synergy
-Neutral
-Bad Synergy
-Rare Synergy
-Secret Synergy
-28 — Hidden Combinations
-بعض التركيبات يمكن أن تنتج:
-دفاعات سرية.
-لكن لا يجب أن يكون النظام عشوائيًا بالكامل.
-يجب أن يكون قابلًا للحساب والتوازن.
-29 — Unmerge
-يمكن للاعب فك الدمج.
-لكن مقابل تكلفة صغيرة.
-لا نريد أن يشعر اللاعب أنه عالق في قرار واحد.
-30 — Merge History
-النظام يمكن أن يسجل التركيبات المكتشفة.
-ويُستخدم لاحقًا في:
-Collection
-Codex
-Achievements
-31 — الدفاعات النادرة
-Rarity:
+    ↓
+Enemy Death
+    ↓
+Reward/Event
+
+The combat system must remain independent from UI.
+
+---
+
+19. Projectiles
+
+Projectile-based attacks may define:
+
+- Speed
+- Damage
+- Target
+- Lifetime
+- Hit behavior
+- Area damage
+- Piercing
+- Chain effects
+- Visual ID
+- VFX ID
+
+Future projectile types must be extensible.
+
+---
+
+20. Damage
+
+The final damage architecture should support:
+
+- Base damage
+- Defense modifiers
+- Enemy resistances
+- Critical damage
+- Elemental interactions
+- Status interactions
+- Special abilities
+- Boss modifiers
+
+Damage calculations must eventually be deterministic and testable.
+
+---
+
+21. Elements
+
+The game may support an elemental system.
+
+Possible elements include, but are not limited to:
+
+- Fire
+- Water
+- Earth
+- Air
+- Lightning
+- Ice
+- Shadow
+- Light
+- Void
+
+The final element list is a design decision and must be recorded before implementation.
+
+Element interactions must be data-driven.
+
+---
+
+22. Status Effects
+
+The combat architecture must eventually support status effects.
+
+Examples:
+
+- Burn
+- Freeze
+- Slow
+- Poison
+- Shock
+- Bleed
+- Stun
+- Armor reduction
+- Damage amplification
+- Healing reduction
+
+Status effects must have:
+
+- Duration
+- Stacking behavior
+- Source
+- Strength
+- Expiration
+- Optional refresh behavior
+
+---
+
+23. Rarity
+
+Content may use rarity tiers.
+
+Initial conceptual hierarchy:
+
 Common
 Uncommon
 Rare
@@ -455,1089 +506,700 @@ Epic
 Legendary
 Mythic
 Secret
-لا تعني الندرة دائمًا القوة المطلقة.
-قد يكون Defense نادرًا بسبب:
-Mechanic
-أو
-Combination potential.
-32 — تطوير الدفاعات
-Upgrade System:
-Level
-↓
-Stats
-↓
-Abilities
-↓
-Visual Changes
-لكن بعض الترقيات يمكن أن تغير أسلوب الدفاع.
-33 — الاقتصاد
-Currencies مستقبلية:
-Gold
-Crystals
-Materials
-Special Tokens
-لكن يجب ألا يتم إنشاء اقتصاد Pay-to-Win.
-34 — XP
-اللاعب يحصل على XP من:
-Waves.
-Enemies.
-Quests.
-Bosses.
-XP يؤدي إلى:
-Level Up.
-35 — Player Levels
-المستوى يفتح:
-Areas.
-Defenses.
-Equipment.
-Quests.
-Challenges.
-36 — Rank
-رتب اللاعب:
-Novice
-Apprentice
-Hunter
-Veteran
-Elite
-Master
-Legend
-Sea Legend
-ويمكن تغيير الأسماء لاحقًا.
-37 — Inventory
-يحتوي على:
-Defenses
-Modules
-Materials
-Equipment
-Special Items
-38 — Equipment
-يمكن أن يكون للاعب:
-Rod
-Boat
-Tools
-Accessories
-لكن يجب ألا يتحول النظام إلى RPG معقد بلا داعٍ.
-39 — World Interaction (بديل قسم "Exploration" القديم — لا يوجد استكشاف بهذه اللعبة إطلاقًا، انظر القسم 01)
-كل ما هو ظاهر على خريطة المنطقة/المستوى الحالي، ظاهر منذ البداية — لا "ضباب حرب"، ولا مناطق تُكتشف تدريجيًا، ولا مكافأة مقابل "التجول". التفاعل الوحيد مع عناصر العالم هو:
-النقر (Tap) المباشر على عنصر ظاهر على الخريطة (صندوق، مورد، Slot بناء).
-مكافآت هذا التفاعل ليست XP فقط. يمكن أن تحتوي عناصر ظاهرة على الخريطة (منذ البداية، بلا اكتشاف تدريجي) على:
-Chests.
-Materials.
-Rare items.
-مواقع دخول Boss (تظهر عند فتح المستوى، لا تُكتشف).
-⚠️ لا وجود لـ: Secret areas تُكتشف بالتجول، Hidden paths، NPCs يُصادَفون أثناء المشي، أو Lore يُكتشف بالاستكشاف. أي محتوى سري بهذه اللعبة يُفتح بشروط تقدّم واضحة (مستوى، إنجاز، Combination)، وليس بالتجول العشوائي.
-40 — Daily Quests
-أمثلة:
-اقتُل 50 عدوًا.
-أكمل 3 موجات.
-استخدم Defense معينًا.
-افتح منطقة/مستوى جديد.
-لكن الـDaily System يجب أن يعمل Offline في البداية.
-41 — Achievements
-أمثلة:
-First Defense
-First Boss
-100 Enemies
-1000 Enemies
-First Secret Combination
-No Damage Wave
-Complete Area
-42 — Boss System
-Bosses ليست مجرد:
-HP ضخم.
-كل Boss له:
-Phase.
-Abilities.
-Weaknesses.
-Patterns.
-Special mechanics.
-43 — Boss Example
-وحش بحري عملاق:
-Phase 1:
-يتقدم.
-Phase 2:
-يستدعي أعداء.
-Phase 3:
-يدمر بعض الدفاعات.
-Phase 4:
-يصبح أسرع.
-44 — Weather System
-الطقس يؤثر على Gameplay.
-أمثلة:
-Clear
-Rain
-Storm
-Fog
-Night
-Heat
-45 — Weather Effects
-Storm:
-+Rare enemies
--Visibility
-+Risk
-Fog:
--Range
-+Special creatures
-Night:
-Special enemies
-Special resources
-46 — Day/Night
-العالم لديه Time System.
-يمكن أن توجد محتويات:
-Day Only
-Night Only
-Storm Only
-47 — Dynamic Events
-أحداث نادرة:
-Treasure Ship
-Sea Monster
-Storm
-Enemy Invasion
-Rare Merchant
-Mystery Portal
-48 — NPC System
-لاحقًا:
-Merchants
-Quest Givers
-Fishermen
-Engineers
-Explorers
-لكن لا نحتاج NPC AI معقدًا في البداية.
-49 — Story
-القصة ليست إجبارية.
-تتوسع تدريجيًا.
-العالم يحتوي على:
-Lore
-Mysteries
-Ancient civilizations
-Sea creatures
-Unknown islands
-50 — UI
-واجهة Mobile First.
-يجب أن تكون:
-واضحة.
-جميلة.
-سريعة.
-قليلة الإزعاج.
-51 — Main Menu
-يحتوي على:
-Play
-Collection
-Inventory
-Shop
-Quests
-Settings
-لكن يتم فتح العناصر تدريجيًا.
-52 — In-Game HUD
-يحتوي على:
-HP Base
-Currency
-Wave
-Player Level
-Objectives
-Menu
-53 — Defense Placement UI
-عند الدخول إلى وضع البناء:
-يظهر:
-Defense Bar
-Selected Defense
-Cost
-Range
-Stats
-Confirm
-Cancel
-54 — Drag & Drop
-يجب أن يدعم النظام لاحقًا:
-سحب Defense
-وضعه
-تحريكه
-استبداله
-دمجه
-فك دمجه
-55 — Build Slots
-الخريطة تحتوي على:
-Build Slots
-لكن يمكن أن توجد مناطق تسمح بالبناء الحر.
-56 — Defense Mobility
-اللاعب يستطيع إعادة ترتيب الدفاعات.
-وهذا جزء من الاستراتيجية.
-57 — Game Modes
-الوضع الأساسي:
-Story / PvE
-لاحقًا:
-Endless
-Boss Rush
-Challenge
-Daily
+
+Rarity can influence:
+
+- Availability
+- Power
+- Visual presentation
+- Upgrade potential
+- Merge outcomes
+- Collection value
+
+Rarity must not automatically become a pay-to-win mechanism.
+
+---
+
+24. Economy
+
+The economy is a core progression system.
+
+Potential economy resources include:
+
+- Level resources
+- Permanent resources
+- Upgrade materials
+- Merge materials
+- Special currencies
+
+Exact resource names and values must be defined before the final Economy implementation.
+
+Economy principles:
+
+- Clear
+- Understandable
+- Balanced
+- Expandable
+- Saveable
+- Resistant to exploits
+- Not pay-to-win by design
+
+---
+
+25. Progression
+
+Progression should reward continued play.
+
+Potential progression layers:
+
+Level Progression
+    ↓
+Defense Unlocks
+    ↓
+Upgrades
+    ↓
+New Maps
+    ↓
+New Content
+    ↓
+Advanced Systems
+
+Progression must be separated from temporary in-level state.
+
+---
+
+26. Inventory / Collection
+
+The game is intended to contain a collection system for defenses and other content.
+
+The collection system should support:
+
+- Ownership
+- Quantity
+- Rarity
+- Unlock status
+- Upgrade level
+- Merge eligibility
+- Metadata
+- Visual identity
+
+The collection architecture must support large content counts.
+
+---
+
+27. Merge System
+
+Merge is a future major progression mechanic.
+
+A merge operation may consume multiple compatible items and produce a new result.
+
+Conceptually:
+
+Input Items
+    ↓
+Validation
+    ↓
+Merge Definition
+    ↓
+Cost / Requirements
+    ↓
+Result
+    ↓
+Collection Update
+    ↓
+Progression / Reward Event
+
+Merge results must be data-driven.
+
+No merge-specific hard-coded chain should be required for every new defense.
+
+---
+
+28. Bosses
+
+Bosses are special enemies with unique mechanics.
+
+Bosses may have:
+
+- Multiple phases
+- Special attacks
+- Summoning
+- Area effects
+- Resistances
+- Enrage states
+- Unique movement
+- Special rewards
+- Unique VFX/audio
+- Boss health UI
+
+Boss architecture must extend the enemy framework rather than create an unrelated enemy engine.
+
+---
+
+29. World Systems
+
+Future world systems may include:
+
+- Weather
+- Day/night
+- Environmental effects
+- Dynamic events
+- NPCs
+- Story events
+- World modifiers
+- Map-specific rules
+
+World systems must communicate through controlled contracts/events.
+
+---
+
+30. Weather
+
+Future weather may affect:
+
+- Visibility
+- Defense effectiveness
+- Enemy behavior
+- Movement
+- Elements
+- VFX
+- Audio
+- Level modifiers
+
+Weather must not directly modify unrelated systems through hidden dependencies.
+
+---
+
+31. Day / Night
+
+Future day/night may affect:
+
+- Visual lighting
+- Enemy types
+- Defense effectiveness
+- Spawn behavior
+- Special events
+- Audio
+- VFX
+
+It should be implemented as a world system rather than scattered time checks throughout gameplay code.
+
+---
+
+32. Quests
+
+Quests may track player actions such as:
+
+- Defeat enemies
+- Complete waves
+- Use specific defenses
+- Merge items
+- Defeat bosses
+- Collect resources
+- Complete maps
+- Complete special conditions
+
+Quest progress should consume gameplay events rather than deeply coupling quests to every system.
+
+---
+
+33. UI / UX
+
+The UI must be mobile-first.
+
+Principles:
+
+- Large touch targets
+- Clear hierarchy
+- Minimal clutter
+- Fast feedback
+- Readable typography
+- Clear resource information
+- Clear combat information
+- Clear objective information
+
+Gameplay logic must not be placed directly inside UI classes.
+
+UI should read state and issue commands to gameplay systems.
+
+---
+
+34. Feedback
+
+Important actions should produce appropriate feedback.
+
+Examples:
+
+- Defense placed
+- Insufficient resources
+- Enemy hit
+- Enemy defeated
+- Wave completed
+- Boss spawned
+- Boss phase changed
+- Reward received
+- Level completed
+- Level failed
+
+Feedback may use:
+
+- UI
+- Animation
+- VFX
+- Audio
+- Camera effects where appropriate
+
+---
+
+35. Audio
+
+Future audio architecture should separate:
+
+- Music
+- Ambient audio
+- UI sounds
+- Combat sounds
+- Enemy sounds
+- Defense sounds
+- Boss sounds
+- Event sounds
+
+Audio IDs should be data-driven where appropriate.
+
+---
+
+36. Visual Effects
+
+VFX must be separated from gameplay logic.
+
+Gameplay should communicate events or effect requests.
+
+VFX should decide how those effects are rendered.
+
+Example:
+
+EnemyDeathEvent
+    ↓
+VFX System
+    ↓
+Death Effect
+
+---
+
+37. Asset Architecture
+
+Final architecture should use an asset contract:
+
+Gameplay Definition
+        ↓
+Visual ID
+        ↓
+Asset Registry
+        ↓
+Model / Texture / Animation
+
+Gameplay code should not contain scattered asset paths.
+
+---
+
+38. Save System
+
+The initial game is offline.
+
+Save data must eventually support:
+
+- Version
+- Schema
+- Validation
+- Migration
+- Backup
+- Recovery
+- Corruption handling
+
+Temporary battle state and permanent player progression must be clearly separated.
+
+---
+
+39. Offline-First
+
+The initial release architecture is offline PvE.
+
+The game must remain playable without network connectivity.
+
+Online systems must not become hidden dependencies of the offline game.
+
+---
+
+40. Future Online Architecture
+
+The architecture should remain compatible with future:
+
+- PvP
+- Co-op
+- Online progression
+- Server-authoritative systems
+- Synchronization
+- Matchmaking
+- Anti-cheat
+
+However:
+
+Online networking must not be implemented during the offline foundation unless explicitly approved by the roadmap gate.
+
+The architecture should merely avoid decisions that make future online integration unnecessarily impossible.
+
+---
+
+41. Multiplayer
+
+Future multiplayer may include:
+
 PvP
+
+Players compete against each other through a server-authoritative architecture.
+
 Co-op
-58 — PvP مستقبلاً
-لا نبني Networking الآن.
-لكن Architecture يجب ألا تمنع إضافته لاحقًا.
-PvP يمكن أن يكون:
-اللاعب يبني دفاعاته.
-واللاعب الآخر يرسل موجات أعداء.
-أو:
-Attack / Defense.
-59 — Online Architecture Future
-لاحقًا فقط.
-قد نحتاج:
-Server
-Authentication
-Matchmaking
-State Synchronization
-Anti-Cheat
-لكن:
-لا يتم تنفيذ أي منها في النسخة Offline.
-60 — Save System
-في Offline:
-Local Save.
-يمكن استخدام:
-localStorage
-أو IndexedDB
-حسب الحاجة.
-يجب أن يكون Save System مستقلًا.
-61 — Save Data
-يحفظ:
-Level
-XP
-Currency
-Unlocked Areas
-Unlocked Defenses
-Inventory
-Collection
-Achievements
-Settings
-62 — Save Versioning
-يجب أن يحتوي Save Data على:
-version
-حتى نستطيع تحديث بيانات اللاعبين مستقبلًا.
-63 — Settings
-لاحقًا:
-Graphics
-FPS
-Camera Sensitivity
-Joystick Size
-Language
-Vibration
-Sound
-Music
-لكن Audio لا ينفذ في المراحل الأولى.
-64 — Localization
-اللعبة يجب أن تكون قابلة لدعم:
-العربية
-English
-ثم لغات أخرى.
-لا تضع النصوص داخل كل نظام بشكل عشوائي.
-استخدم Localization System.
-65 — Graphics Style
-الأسلوب:
-Stylized 3D Fantasy
-ليس Photorealistic.
-الهدف:
-جميل
-واضح
-ملون
-مميز
-ويعمل على الهاتف.
-66 — Environment
-العالم يمكن أن يحتوي على:
-Ocean
-Islands
-Rocks
-Trees
-Plants
-Buildings
-Ruins
-Bridges
-Cliffs
-Caves
-67 — Asset Strategy
-في البداية:
-Procedural / Primitive Assets.
-ثم لاحقًا:
-Custom 3D Assets
-Textures
-Animations
-VFX
-UI Assets
-68 — Animation
-لاحقًا:
-Idle
-Walk
-Run
-Attack
-Hit
-Death
-Special
-لكن لا نحتاج نظام Animation معقدًا في أول نسخة.
-69 — VFX
-لاحقًا:
-Fire
-Explosion
-Ice
-Electric
-Poison
-Laser
-Water
-Impact
-Boss Effects
-يجب أن تكون VFX قابلة لإعادة الاستخدام.
-70 — Particle System
-يجب مراعاة Mobile Performance.
-لا نستخدم أعدادًا ضخمة من particles.
-71 — Performance
-Mobile First.
-يجب مراقبة:
-FPS
-Memory
-Draw Calls
-Triangles
-Texture Memory
-Object Count
-Particle Count
-72 — Object Pooling
-استخدم Pooling مستقبلًا للأشياء المتكررة:
-Projectiles
-Enemies
-Particles
-Effects
-73 — Physics
-لا نستخدم Physics Engine ثقيلًا إلا إذا أصبح ضروريًا.
-نستخدم حلولًا بسيطة حيث يمكن.
-74 — Collision
-نظام Collision مستقل.
-⚠️ لا يوجد Player Collision (لا يوجد جسم لاعب متحرك — انظر القسم 01). يدعم لاحقًا:
-Camera (منع الكاميرا من اختراق سطح الجزيرة/الجبل عند التكبير القريب جدًا).
-Environment (تصادم عناصر البيئة ببعضها عند البناء، مثل منع وضع دفاعين بنفس المكان).
-Projectiles (تصادم المقذوفات بالأعداء).
-Enemies (تصادم الأعداء بالقاعدة/الدفاعات).
-Defenses (تحقق من صلاحية مكان وضع الدفاع أثناء البناء — Placement Validation).
-75 — Input Architecture
-InputManager موحد.
-يدعم:
-Touch
-Mouse
-Keyboard
-Gamepad مستقبلًا.
-لا تربط Game Logic مباشرة بأحداث DOM.
-76 — Event System
-نحتاج Event Bus خفيف عند الحاجة.
-أمثلة:
-EnemyKilled
-WaveStarted
-WaveCompleted
-DefensePlaced
-DefenseMerged
-BossDefeated
-LevelUp
-AreaUnlocked
-77 — Data Driven Design
-البيانات يجب أن تكون منفصلة عن Logic.
-مثلاً Defense Definition.
-بدل كتابة:
-if tower === "cannon"
-في كل مكان.
-78 — Configuration
-الأرقام المهمة مركزية.
-مثل:
-Player Speed
-Enemy Speed
-Wave Scaling
-Defense Costs
-Damage
-Ranges
-79 — Debug Mode
-نحتاج Debug Tools مستقبلًا.
-مثل:
-Show Path
-Show Enemy IDs
-Show Defense Range
-Show FPS
-Spawn Enemy
-Skip Wave
-Add Currency
-لكن Debug Mode لا يظهر للاعب العادي.
-80 — Testing
-كل مرحلة يجب اختبارها.
-لا نضيف Features فوق نظام مكسور.
-81 — Architecture
-يجب فصل:
-Core
-World
-Player
-Enemies
-Defenses
-Combat
+
+Players cooperate against PvE content.
+
+Multiplayer is a future phase and must not contaminate the offline gameplay implementation prematurely.
+
+---
+
+42. Content Scalability
+
+The project must support adding large amounts of content without creating one-off code.
+
+Preferred model:
+
+Definition
+    ↓
+Generic System
+    ↓
+Content Instance
+
+For example:
+
+DefenseDefinition
+    ↓
+Defense System
+    ↓
+Hundreds of Defense Types
+
+rather than:
+
+DefenseA.js
+DefenseB.js
+DefenseC.js
+...
+
+when the behavior can be represented by data.
+
+---
+
+43. Data Contracts
+
+Planned contracts include:
+
+EnemyDefinition
+DefenseDefinition
+BossDefinition
+RewardDefinition
+UpgradeDefinition
+QuestDefinition
+MapDefinition
+MergeDefinition
+
+Every contract must have clear ownership and validation rules.
+
+---
+
+44. System Ownership
+
+Each major system must explicitly define:
+
+- What it owns
+- What it reads
+- What it modifies
+- What it emits
+- What it is allowed to call
+- What it must never directly control
+
+This prevents the project from becoming a collection of interconnected scripts with hidden dependencies.
+
+---
+
+45. Event-Driven Communication
+
+Where appropriate, systems should communicate through events.
+
+Example:
+
+Enemy Death
+    ↓
+Reward System
 Economy
-Progression
-Merge
+Quest System
+Statistics
 UI
-Save
-Audio
 VFX
-Network
-82 — Dependency Direction
-الأنظمة الأساسية لا تعتمد على UI.
-Game Logic لا يعتمد على DOM.
-UI يعرض البيانات ولا يمتلك Game Logic.
-83 — No God Object
-ممنوع إنشاء:
-Game.js
-يحتوي على كل شيء.
-يجب تقسيم المسؤوليات.
-84 — No Global Chaos
-تجنب:
-window.game
-window.player
-window.enemyManager
-إلا عند الحاجة الشديدة للتطوير.
-85 — Error Handling
-الأخطاء يجب أن تكون واضحة.
-لا نسمح بخطأ صغير أن يكسر Game Loop بالكامل.
-86 — Offline Requirement
-النسخة الأولى تعمل بدون إنترنت.
-بعد تحميل المشروع:
-كل Gameplay Logic محلي.
-87 — No External Services
-في النسخة الأولى:
-لا Firebase.
-لا Supabase.
-لا Backend.
-لا API.
-لا Analytics.
-لا Ads.
-لا Cloud.
-لا Login.
-لا Multiplayer.
-88 — Audio
-يضاف في مرحلة مستقلة بعد استقرار Gameplay.
-يشمل لاحقًا:
-Music
-SFX
-Ambient
-UI Sounds
-Boss Sounds
-Environment
-89 — Audio Architecture
-عند إضافة الصوت:
-AudioManager
-MusicManager
-SFXManager
-Volume Settings
-لكن لا تنشئها الآن.
-90 — Online
-يضاف فقط بعد اكتمال Offline.
-السبب:
-Offline هو أساس Gameplay.
-لا نريد أن نعقد المشروع مبكرًا.
-91 — PvP Balance
-عند إضافته:
-لا يمكن أن تعتمد القوة على المال فقط.
-يجب أن يكون:
-Strategy > Spending.
-92 — Monetization Future
-ليس الآن.
-وعندما يأتي وقتها يجب أن تكون:
-Cosmetics
-Optional Content
-Battle Pass محتمل
-لكن لا نريد Pay-to-Win.
-93 — Cosmetics
-لاحقًا:
-Player Skins
-Boat Skins
-Defense Skins
-Base Skins
-Effects
-Trails
-94 — Collection
-موسوعة تحتوي على:
-Enemies
+Audio
+
+A system should not need direct knowledge of every consumer of its event.
+
+---
+
+46. Performance
+
+The game must eventually support large numbers of:
+
+- Enemies
+- Defenses
+- Projectiles
+- Effects
+- World objects
+
+Mobile performance is a primary constraint.
+
+Optimization targets must eventually be measured rather than guessed.
+
+Potential future techniques:
+
+- Object pooling
+- Instancing
+- Spatial partitioning
+- Culling
+- Batched rendering
+- Reduced allocations
+- Efficient update loops
+- LOD where useful
+
+These techniques must be introduced only where measurement justifies them.
+
+---
+
+47. Mobile Performance
+
+The project must prioritize:
+
+- Stable frame rate
+- Low memory usage
+- Low unnecessary allocations
+- Fast loading
+- Touch responsiveness
+- Thermal stability
+- Long-session reliability
+
+Performance testing must occur on actual mobile devices.
+
+---
+
+48. Security / Exploit Resistance
+
+Even in offline mode, important game systems should be designed to minimize accidental corruption or invalid state.
+
+Examples:
+
+- Validate resource transactions
+- Validate merge inputs
+- Validate progression unlocks
+- Validate save data
+- Avoid trusting UI state as authoritative gameplay state
+
+Future online systems will require significantly stronger validation.
+
+---
+
+49. Error Handling
+
+Systems must fail safely.
+
+Invalid states should:
+
+- Be detected
+- Be logged appropriately
+- Avoid corrupting unrelated systems
+- Provide useful diagnostic information
+- Avoid silent failure
+
+Save corruption must have recovery behavior once saving is implemented.
+
+---
+
+50. Development Rules
+
+No feature is considered complete merely because code exists.
+
+A feature is complete only when:
+
+Scope
+↓
+Acceptance Criteria
+↓
+Dependencies
+↓
+Data Contract
+↓
+Implementation
+↓
+Static Check
+↓
+Unit Test
+↓
+Integration Test
+↓
+Gameplay Test
+↓
+Regression
+↓
+Performance
+↓
+Mobile Test
+↓
+Documentation
+↓
+Gate
+
+---
+
+51. Phase Architecture
+
+The project follows controlled phases.
+
+High-level order:
+
+Phase 0 — Full Repository Audit
+Phase 1 — Project Memory
+Phase 2 — Source of Truth
+Phase 3 — System Ownership
+Phase 4 — Architecture Foundation
+Architecture Gate
+Phase 5 — Vertical Slice
+Vertical Slice Gate
+Phase 6 — Economy
+Phase 7 — Progression
+Phase 8 — Merge
+Phase 9 — Collection
+Phase 10 — Bosses
+Phase 11 — World Systems
+Phase 12 — Quests
+Phase 13 — Advanced World
+Phase 14 — Content Pipeline Gate
+Phase 15 — Content Expansion
+Phase 16 — Visual
+Phase 17 — VFX
+Phase 18 — Audio
+Phase 19 — UI/UX
+Phase 20 — Performance
+Phase 21 — Device Compatibility
+Phase 22 — Save / Offline Alpha
+Phase 23 — Balance
+Phase 24 — QA / Regression
+Phase 25 — Release Candidate
+Phase 26 — Online Architecture
+Phase 27 — Multiplayer
+Phase 28 — Live Content
+Phase 29 — Launch
+
+---
+
+52. Phase Gates
+
+A phase may not be considered complete until:
+
+- Acceptance criteria pass
+- Relevant tests pass
+- Regression passes
+- Performance is acceptable
+- Mobile verification is performed where applicable
+- Documentation is updated
+- Known risks are recorded
+- No unresolved blocker prevents the next phase
+
+The next phase must not start automatically.
+
+---
+
+53. Current Design Priorities
+
+The highest priorities are:
+
+1. Architectural stability
+2. Correct system ownership
+3. Data-driven content
+4. Reliable gameplay loop
+5. Save integrity
+6. Mobile performance
+7. Scalable content pipeline
+8. Clear UI/UX
+9. Long-term extensibility
+10. Future online compatibility
+
+---
+
+54. Design Anti-Goals
+
+Infinity Depths must avoid becoming:
+
+- A collection of unrelated scripts
+- A God Object architecture
+- UI-driven gameplay
+- Hard-coded content
+- Duplicate systems
+- A fragile prototype that cannot scale
+- A game dependent on internet connectivity
+- A pay-to-win economy
+- A game requiring exploration to understand the battlefield
+- A character-movement game that conflicts with its strategy identity
+
+---
+
+55. Final Design Principle
+
+Infinity Depths should feel simple to control but deep to master.
+
+The player should be able to understand the battlefield quickly while discovering increasingly complex interactions between:
+
 Defenses
-Bosses
-Areas
-Combinations
-95 — Discovery
-عندما يكتشف اللاعب Combination جديد:
-يتم تسجيله.
-لكن لا يجب كشف كل الأسرار بسهولة.
-96 — Strategic Depth
-اللعبة يجب أن تجعل اللاعب يفكر:
-أين أضع الدفاع؟
-أي Defense أستخدم؟
-هل أدمجه؟
-ماذا سأخسر؟
-متى أفك الدمج؟
-أي Targeting؟
-أي Element؟
-هل أستخدم Damage أم Crowd Control؟
-هل أبني دفاعات كثيرة أم قليلة قوية؟
-97 — No Dominant Strategy
-يجب مراقبة التوازن.
-لا نريد Defense واحدًا يحل كل شيء.
-98 — Content Expansion
-Architecture يجب أن تسمح بإضافة:
-100+
-500+
-1000+
-Defense combinations.
-بدون إعادة كتابة Core.
-99 — Enemy Expansion
-Architecture تسمح بإضافة مئات الأعداء.
-100 — Area Expansion
-يمكن إضافة مناطق جديدة دون تعديل الأنظمة الأساسية.
-101 — Save Compatibility
-عند تحديث اللعبة:
-الـSave القديم يجب أن يبقى قابلًا للقراءة قدر الإمكان.
-102 — Mobile Optimization
-الأولوية:
-60 FPS إن أمكن.
-مع توفير Quality Levels للأجهزة الضعيفة.
-103 — Quality Levels
-Low
-Medium
-High
-Ultra
-لكن يمكن تأجيلها.
-104 — Responsive UI
-يجب دعم:
-Android Phones
-Small Screens
-Large Screens
-Tablets
-Landscape
-Portrait
-105 — Touch UX
-الأزرار كبيرة بما يكفي.
-لا تعتمد على Hover.
-لا تستخدم عناصر صغيرة.
-106 — Camera UX
-حركة الكاميرا لا تكون:
-سريعة جدًا.
-أو بطيئة جدًا.
-Sensitivity قابلة للتعديل لاحقًا.
-107 — Tutorial
-Tutorial تدريجي.
-لا نرمي 20 نظامًا في وجه اللاعب.
-أول شيء:
-Move
-Explore
-Build
-Defend
-Reward
-Upgrade
-Merge
-108 — Progressive Unlocking
-الميزات نفسها تفتح تدريجيًا.
-مثال:
-Level 1:
-Basic Defense
-Level 3:
-Upgrade
-Level 5:
-Merge
-Level 10:
-Advanced Modules
-Level 15:
-New Area
-وهكذا.
-109 — Reward Psychology
-المكافآت يجب أن تكون:
-واضحة
-مرضية
-متنوعة
-لكن غير استغلالية.
-110 — Failure
-عند الخسارة:
-لا نعاقب اللاعب بشكل مبالغ.
-نوضح:
-Why Lost
-Damage Taken
-Best Defense
-Rewards
-111 — Replayability
-إعادة اللعب يجب أن تكون مفيدة بسبب:
-Different Enemy Composition
-Weather
-Defense Combinations
-Challenges
-Random Events
-112 — Endless Mode
-لاحقًا.
-Wave 1 → ∞
-مع Scaling متوازن.
-113 — Challenge Mode
-قواعد خاصة:
-No Merge
-Only Fire
-Low HP
-Fast Enemies
-Boss Only
-114 — Boss Rush
-Boss بعد Boss.
-115 — Random World Events (بديل "Exploration Events" — لا استكشاف بهذه اللعبة)
-يمكن أن تظهر للاعب على خريطة قاعدته/مستواه الحالي، بشكل عشوائي ودوري (وليس عبر "تجول" أو "اكتشاف"):
-حدث مفاجئ.
-كنز.
-عدو نادر.
-بوابة.
-116 — World Identity
-كل منطقة يجب أن تشعر بأنها مختلفة.
-ليس فقط تغيير لون الأرض.
-117 — Environment Gameplay
-البيئة قد تؤثر على:
-Range
-Movement
+    +
+Enemies
+    +
 Elements
-Enemies
-Defense
-118 — Water
-الماء ليس مجرد خلفية.
-يمكن أن يصبح جزءًا من Gameplay لاحقًا.
-119 — Boats
-لاحقًا يمكن للاعب استخدام قارب للتنقل بين الجزر.
-120 — World Map
-خريطة عالمية مستقبلية:
-Areas
-Islands
-Locked Regions
-Boss Regions
-Events
-121 — Progression Philosophy
-كل تقدم يجب أن يعطي اللاعب شيئًا:
-قوة
-خيارًا
-منطقة
-Mechanic
+    +
+Status Effects
+    +
+Economy
+    +
+Progression
+    +
+Merge
+    +
 Collection
-Cosmetic
-122 — Player Choice
-نريد Builds مختلفة.
-لا يوجد Build واحد إجباري.
-123 — Build System
-يمكن للاعب بناء:
-Damage Build
-Control Build
-Element Build
-Critical Build
-Defense Build
-Economy Build
-Hybrid Build
-124 — Synergy
-بعض الدفاعات تعمل أفضل مع بعضها.
-مثال:
-Freeze
-Sniper
-125 — Anti-Synergy
-بعض التركيبات تخلق عيوبًا.
-وهذا مقصود.
-126 — Meta Progression
-لاحقًا يمكن وجود تقدم دائم بين المناطق.
-127 — Local Save Security
-في Offline لا يمكن منع التعديل على Save بالكامل.
-لكن يمكن تصميم Save Format جيد.
-128 — Development Philosophy
-كل مرحلة:
-Build
-↓
-Run
-↓
-Test
-↓
-Fix
-↓
-Optimize
-↓
-Commit
-↓
-Next Stage
-129 — Git Architecture
-المشروع يجب أن يكون Git-friendly.
-Commits صغيرة ومنطقية.
-130 — Versioning
-الإصدارات:
-0.1 Foundation
-0.2 World
-0.3 Camera & Touch Controls (سابقًا: Player — تحوّل بقرار مسجَّل إلى كاميرا ثابتة الزاوية بدون شخصية)
-0.4 Enemies
-0.5 Defenses
-0.6 Combat
-0.7 Waves
-0.8 Economy
-0.9 Merge
-1.0 Offline Alpha
-ثم نرفع الإصدار تدريجيًا.
-131 — المرحلة 1
-CORE FOUNDATION
-المطلوب:
-Project setup.
-Three.js.
-Renderer.
-Scene.
-Camera.
-Game loop.
-Time.
-Config.
-GameState.
-Input foundation.
-Error handling.
-132 — المرحلة 2
-3D WORLD
-Ocean.
-Island.
-Terrain.
-Lighting.
-Fog.
-Environment.
-World bounds.
-133 — المرحلة 3
-CAMERA & TOUCH CONTROLS (بديل مرحلة PLAYER القديمة — قرار مسجَّل ✅ منفَّذة)
-⚠️ هذه المرحلة استبدلت بالكامل النسخة القديمة (Character / Movement / Third-person camera / Mobile joystick) الموصوفة سابقًا. لا يوجد جسم لاعب.
-المطلوب فيها (منفَّذ):
-Fixed-Angle Camera (زاوية ميلان ثابتة، Config: TILT_ANGLE_DEG).
-Pan (سحب إصبع واحد لتحريك نقطة النظر).
-Zoom (سحب إصبعين / Pinch لتغيير المسافة).
-Pan Bounds (حدود تمنع الكاميرا من مغادرة منطقة اللعب).
-Touch input منفصل تمامًا عن منطق الكاميرا (TouchControls يوفر بيانات خام، CameraController يستهلكها).
-دعم الماوس على الحاسوب لأغراض الاختبار فقط.
-Ground/Camera Collision: مؤجّل لمرحلة تحسين لاحقة (ليس أساسيًا).
-134 — المرحلة 4
-WORLD INTERACTION (بديل مرحلة EXPLORATION القديمة — لا استكشاف بهذه اللعبة، انظر القسم 39)
-Interactions (نقر/Tap على عناصر ظاهرة على الخريطة: صناديق، موارد، Slots بناء).
-World markers (أيقونات ثابتة فوق العناصر القابلة للتفاعل، ظاهرة من زاوية الكاميرا الحالية).
-Basic resources (موارد تُجمع بالنقر المباشر عليها).
-Chests (صناديق تُفتح بالنقر).
-Interaction state (تتبّع ما فُتح/جُمع من عناصر الخريطة، دون الحاجة لموقع لاعب فعلي أو مفهوم اكتشاف).
-135 — المرحلة 5
-DEFENSE MAP
-Path.
-Spawn.
-Base.
-Build zones.
-Defense placement — لا يوجد "خانات" (Slots) بمواقع ثابتة. الدفاعات تُوضع بحرية بأي مكان على الجزيرة، بشرط عدم وضعها على مسار الأعداء (Path) أو ضمن مسافة أمان قريبة منه (Path Exclusion Buffer). قرار مسجَّل — انظر أيضًا PROJECT_STATE.md.
-Wave preparation.
-136 — المرحلة 6
-ENEMIES
-Enemy base.
-Enemy manager.
-Path following.
-HP.
-Damage.
-Death.
-Rewards.
-137 — المرحلة 7
-WAVES
-Wave manager.
-Spawn groups.
-Difficulty.
-Wave UI.
-Wave completion.
-Game over.
-138 — المرحلة 8
-DEFENSES
-Defense base.
-Defense manager.
-Placement — وضع حر بأي مكان على الجزيرة ما عدا مسار الأعداء ومحيطه (انظر قسم 135 / DefenseMap.isPositionBuildable). لا خانات ثابتة.
-Stats.
-Targeting.
-Attack.
-139 — المرحلة 9
-COMBAT
-Projectiles.
-Damage.
-Critical.
-Armor.
-Resistance.
-Status Effects.
-140 — المرحلة 10
-ECONOMY
-Gold.
-Rewards.
-Costs.
-Upgrades.
-Inventory.
-141 — المرحلة 11
-PROGRESSION
-XP.
-Levels.
-Rank.
-Unlocks.
-Areas.
-Defenses.
-142 — المرحلة 12
-MERGE ENGINE
-أهم مرحلة.
-Defense Components.
-Traits.
-Modules.
-Elements.
-Modifiers.
-Compatibility.
-Merge Recipes.
-Dynamic Results.
-Trade-offs.
-Unmerge.
-Cost.
-Discovery.
-143 — المرحلة 13
-COLLECTION
-Defense Codex.
-Enemy Codex.
-Boss Codex.
-Combination Discovery.
-Completion percentage.
-144 — المرحلة 14
-BOSSES
-Boss framework.
-Phases.
-Abilities.
-Weaknesses.
-Rewards.
-145 — المرحلة 15
-WEATHER + DAY/NIGHT
-World clock.
-Weather.
-Gameplay modifiers.
-Special events.
-146 — المرحلة 16
-QUESTS
-Main quests.
-Daily quests.
-Challenges.
-Achievements.
-147 — المرحلة 17
-ADVANCED WORLD
-More islands.
-More areas.
-Hidden locations.
-NPC foundation.
-Events.
-148 — المرحلة 18
-VISUAL UPGRADE
-استبدال Prototype geometry تدريجيًا بـ:
-Custom models.
-Better materials.
-Textures.
-Animation.
-VFX.
-Environment assets.
-149 — المرحلة 19
-AUDIO
-Audio manager.
-Music.
-SFX.
-Environment.
-Combat.
-Boss audio.
-UI audio.
-150 — المرحلة 20
-POLISH
-UI polish.
-Animations.
-Feedback.
-VFX.
-Camera effects.
-Performance.
-Loading.
-Error states.
-151 — المرحلة 21
-MOBILE OPTIMIZATION
-اختبار الأجهزة الضعيفة والمتوسطة والقوية.
-تحسين:
-Draw calls.
-Memory.
-FPS.
-Garbage collection.
-Object pooling.
-Assets.
-Loading.
-152 — المرحلة 22
-OFFLINE ALPHA
-يجب أن تحتوي على:
-World Interaction
-Defense
-Enemies
-Waves
-Combat
-Economy
-Progression
-Merge
+    +
 Bosses
-Save
-وتعمل Offline.
-153 — المرحلة 23
-BALANCING
-اختبار:
-Economy.
-Damage.
-Enemy scaling.
-Merge combinations.
-Boss difficulty.
-Progression.
-154 — المرحلة 24
-ONLINE PREPARATION
-لا نضيف Network بعد.
-نراجع فقط Architecture.
-نحدد:
-Authoritative State
-Client State
-Match State
-Player State
-155 — المرحلة 25
-ONLINE MULTIPLAYER
-يتم بناؤها لاحقًا فقط.
-تشمل:
-Authentication
-Lobby
-Matchmaking
-Server
-Synchronization
-PvP
-Co-op
-Anti-Cheat
-156 — المرحلة 26
-LIVE CONTENT
-لاحقًا:
-Events
-Seasons
-Challenges
-New Areas
-New Defenses
-New Bosses
-157 — المرحلة 27
-FINAL RELEASE
-يشمل:
-Performance
-Security
-Save migration
-UI
-Localization
-Audio
-Assets
-Testing
-Bug fixing
-Build pipeline
-Release preparation
-158 — قاعدة البناء
-لا ننتقل من مرحلة إلى المرحلة التالية إلا بعد:
-الكود يعمل.
-لا توجد أخطاء حرجة.
-Architecture سليمة.
-Mobile controls تعمل.
-الأنظمة القديمة لم تنكسر.
-الملفات منظمة.
-يمكن حفظ نسخة Git.
-159 — قاعدة الملفات
-كلما كبر المشروع:
-لا نضع كل شيء في ملف واحد.
-كل نظام يحصل على ملفاته.
-إذا أصبح الملف كبيرًا جدًا:
-قسّمه.
-160 — قاعدة التوافق
-أي نظام جديد يجب أن يكون متوافقًا مع الأنظمة السابقة.
-لا نكسر API داخليًا بدون سبب.
-161 — قاعدة عدم التسرع
-إذا كان هناك حل سريع:
-لكن سيجعل المشروع أصعب بعد شهر،
-لا نستخدمه.
-162 — الهدف النهائي
-أريد أن تتحول:
-Infinite Depths
-من Prototype صغير إلى:
-لعبة 3D استراتيجية عالمية قابلة للتوسع.
-يجب أن يشعر اللاعب بأنه:
-يبني قاعدته.
-يصمم تشكيلته.
-يخاطر بالدمج.
-يكتشف تركيبات جديدة.
-يواجه أعداءً متنوعين.
-يهزم Bosses.
-يفتح مناطق.
-ويطور أسلوب لعب خاصًا به.
-163 — المبدأ النهائي
-لا نريد:
-Tower Defense سطحي بلا عمق.
-نريد أن يكون:
-بناء القاعدة
-و
-الدفاع
-و
-الدمج
-و
-الاستراتيجية
-أنظمة مترابطة.
-كل قرار في اللعبة يجب أن يؤثر في قرار آخر.
-164 — طريقة العمل بيننا
-لن يتم إنشاء المشروع كاملًا دفعة واحدة.
-عندما يطلب المستخدم:
-"أعطني القسم X"
-يجب تنفيذ القسم المطلوب فقط.
-يجب:
-تحديد الملفات الجديدة.
-تحديد الملفات التي سيتم تعديلها.
-إنشاء الكود الكامل.
-الحفاظ على الأنظمة السابقة.
-شرح مكان كل ملف.
-اختبار منطقي للكود.
-ذكر أي اعتماد جديد.
-عدم إضافة Features من أقسام لاحقة بلا حاجة.
-165 — عند وجود ملف سابق
-لا تستبدله عشوائيًا.
-إذا كان يحتاج تعديلًا:
-اكتب النسخة الكاملة المحدثة للملف.
-لا تعطِ المستخدم:
-"أضف هذه الأسطر في السطر 438"
-إذا كان الملف طويلًا.
-الأفضل إعطاء الملف الكامل المحدث.
-166 — عند اكتمال كل مرحلة
-يجب أن يكون لدينا:
-Working Build
-ثم ننتقل إلى المرحلة التالية.
-167 — معيار الجودة
-كل كود يجب أن يكون:
-Readable
-Maintainable
-Modular
-Performant
-Extensible
-Mobile Friendly
-Offline Compatible
-168 — الأولوية
-ترتيب الأولويات:
-Correctness
-Architecture
-Gameplay
-Performance
-UX
-Visual Quality
-Polish
-169 — ممنوع
-لا تستخدم حلولًا وهمية مثل:
-"Fake 3D"
-أو:
-صورة ثابتة للعالم.
-اللعبة يجب أن تكون:
-3D حقيقية باستخدام WebGL / Three.js.
-170 — النتيجة المطلوبة
-في النهاية يجب أن يكون لدينا Codebase حقيقي:
-Core
-World
-Player
-Enemies
-Defenses
-Combat
-Merge
-Progression
-Economy
-UI
-Save
-Audio
-VFX
-ثم Online مستقبلًا.
-END OF MASTER SPECIFICATION
-هذه الوثيقة هي المرجع الأساسي.
-لا يتم تنفيذ جميع الأقسام دفعة واحدة.
-نبدأ بالقسم:
-01 — CORE FOUNDATION
-ثم نبني المشروع تدريجيًا حتى يصبح Infinite Depths لعبة كاملة.
+    +
+World Systems
+
+Complexity should come from meaningful strategic interaction, not from confusing controls or unnecessary UI.
+
+---
+
+56. Source of Truth
+
+This document is the design truth.
+
+If implementation differs from this document:
+
+1. Inspect the implementation.
+2. Determine whether the implementation or design is intentionally correct.
+3. Record the decision in "DECISIONS.md".
+4. Update the appropriate document.
+5. Never silently allow contradictions to accumulate.
+
+GAME_SPEC defines what the game should be.
+
+PROJECT_STATE defines what the game currently is.
+
+CODE defines what actually executes.
+
+TESTING defines what has been proven.
