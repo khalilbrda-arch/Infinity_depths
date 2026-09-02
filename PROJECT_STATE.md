@@ -1,130 +1,1018 @@
-PROJECT STATE — Infinite Depths
-هذا الملف هو المرجع الحي لحالة المشروع. يُحدَّث بعد كل خطوة حقيقية.
-عند بدء أي محادثة جديدة، يجب قراءة هذا الملف كاملاً أولاً، بالإضافة إلى GAME_SPEC.md (وخصوصًا الملاحظة الإلزامية بأعلاه والأقسام 01، 07، 08، 39).
+Infinity Depths — Project State
 
-⚠️ القرار المعماري الأهم بالمشروع (لا يُلغى إلا بطلب صريح من المستخدم)
-اللعبة كاميرا ثابتة الزاوية من فوق (Fixed-Angle Top-Down)، أسلوب Clash of Clans — زاوية ميلان 58° عن الأرض، تحكم فقط بالسحب (Pan) والتكبير/التصغير (Zoom). لا يوجد جسم لاعب متحرك إطلاقًا (لا Player.js، لا منظور شخص أول/ثالث، لا WASD/Joystick).
+«Purpose: This file records the current implementation reality of the project.
+It is not the game design specification and it must not contain future features as if they already exist.»
 
-⚠️ قرار إضافي مسجَّل (طلب صريح من المستخدم، قسم 135/138 بالمواصفات): لا يوجد "خانات دفاع" (Slots) بمواقع ثابتة. الدفاعات تُوضع بحرية بأي مكان على الجزيرة، بشرط عدم وضعها فوق مسار الأعداء أو ضمن هامش أمان قريب منه (PATH_EXCLUSION_RADIUS). راجع DefenseMap.isPositionBuildable(x, z).
+Last Updated: 2026-09-02
+Project: Infinity Depths
+Repository: "khalilbrda-arch/Infinity_depths"
+Branch: "main"
 
-⚠️ قرار إضافي مسجَّل (المرحلة 8): طريقة وضع الدفاع هي النقر (Tap-to-Place) على مكان صالح على الجزيرة أثناء "وضع البناء" — وليس سحب وإفلات (Drag & Drop) مباشر. هذا القرار متسق مع بنية الإدخال الحالية بالمشروع (TouchControls يوفّر Tap كحدث منفصل تمامًا عن Pan، بلا موضع تمرير مستمر أثناء اللمس على الهاتف). سحب/نقل دفاع موضوع بالفعل (قسم 54 بالمواصفات) مؤجَّل لمرحلة تحسين لاحقة — لم يُبنَ الآن، ولا يُقترح إلا بطلب صريح جديد.
+---
 
-⚠️ قرار إضافي مسجَّل: لا يوجد أي نظام "استكشاف" (Exploration) بهذه اللعبة — لا مناطق مجهولة تُكتشف تدريجيًا، لا ضباب حرب، لا مكافأة مقابل التجول. كل عنصر تفاعلي (صندوق/مورد) ظاهر على الخريطة منذ البداية، ويُفتح/يُجمع بنقرة (Tap) مباشرة عليه. القسم 39 بالمواصفات اسمه الآن "World Interaction" (سابقًا Exploration).
+1. Current Development Protocol
 
-الترتيب الزمني للقرارات: Third-Person (تصميم أولي) → First-Person (تغيير أول) → Fixed-Angle Top-Down بدون استكشاف (القرار الحالي والنهائي).
+Every development cycle follows this exact order:
 
-آخر تحديث
-✅ المستخدم أكد اكتمال المرحلة 7 (WAVES) فعليًا. بناءً على طلبه، تم تنفيذ المرحلتين 8 و9 معًا بهذه الجولة:
+READ → INSPECT → UNDERSTAND → PLAN → IMPLEMENT → TEST → REGRESSION → DOCUMENT → REPORT → STOP
 
-**المرحلة 8 — DEFENSES (قسم 138):**
-ملف جديد /src/defenses/Defense.js — فئة الدفاع الواحد (كلاس، بنفس نمط Enemy.js): نموذج بصري Prototype (قاعدة أسطوانية + برج كروي + ماسورة تدور نحو الهدف)، استهداف (targeting: "first" — أقرب عدو لوصول القاعدة ضمن المدى)، تبريد/معدل إطلاق (fireRate)، ونداء ProjectileManager.spawn() عند الجاهزية.
-ملف جديد /src/defenses/DefenseManager.js — وضع الدفاعات: وضع بناء (isPlacing) يُفعَّل من زر DefenseUI، تحويل نقرة الشاشة لنقطة أرضية عبر Raycaster + THREE.Plane (getGroundIntersection)، تحقق DefenseMap.isPositionBuildable + عدم تراكب دفاعين (MIN_DISTANCE_BETWEEN) + كفاية الذهب (GameState.canAfford)، خصم التكلفة (GameState.spendCurrency)، ثم إنشاء Defense وإضافته للمشهد. تحديث كل الدفاعات كل إطار (update).
-ملف جديد /src/ui/DefenseUI.js — زر ثابت أسفل الشاشة "🔫 وضع مدفع (40)"، يتحول إلى "✖ إلغاء" أثناء وضع البناء مع تلميح نصي فوقه. كل حدث لمس/نقر على الزر يستدعي e.stopPropagation() حتى لا تُفسَّر نفس اللمسة كنقرة داخل العالم عبر TouchControls (المُركَّبة على window).
-تحديث Config.js — قسم CONFIG.DEFENSES جديد بالكامل: GROUND_Y، MIN_DISTANCE_BETWEEN، وTYPES.cannon (نوع دفاع واحد فقط بهذه المرحلة — cost 40، damage 8، critChance 0.15، critMultiplier 1.8، range 7، fireRate 1.1، targeting "first"، إعدادات المقذوف والألوان). البنية Data-Driven (قسم 77): إضافة نوع دفاع جديد لاحقًا = إضافة مُدخَل هنا فقط، بدون لمس Defense.js/DefenseManager.js.
-تحديث GameState.js — إضافة canAfford(cost) وspendCurrency(amount) (خصم آمن، يفشل إذا كان الرصيد غير كافٍ).
-تحديث InteractionController.js — عند DefenseManager.isPlacing، أي نقرة تُحوَّل مباشرة لمحاولة وضع دفاع (بدل التحقق من الصناديق/الموارد/مناطق البناء).
-تحديث GameOverUI.js — عند Game Over: DefenseManager.cancelPlacement() + DefenseUI.disable() (لا معنى لوضع دفاعات جديدة بعد تدمير القاعدة).
+Rules:
 
-**المرحلة 9 — COMBAT (قسم 139):**
-ملف جديد /src/combat/Projectile.js — مقذوف واحد (كلاس): Homing بسيط (يعيد حساب اتجاهه نحو الموضع الحالي للهدف كل إطار، وليس خطًا مستقيمًا ثابتًا)، عند الوصول يستدعي EnemyManager.damageEnemy() فيُطبَّق الضرر (والـArmor تلقائيًا، مُنفَّذ أصلًا بـEnemy.takeDamage منذ المرحلة 6). إذا اختفى الهدف قبل الإصابة (مات بمقذوف آخر أو وصل القاعدة) يختفي المقذوف بصمت (Miss) بلا خطأ.
-ملف جديد /src/combat/ProjectileManager.js — إنشاء/تحديث/تنظيف كل المقذوفات النشطة كل إطار.
-تحديث Config.js — قسم CONFIG.COMBAT جديد: PROJECTILE_RADIUS، HIT_DISTANCE.
-تحديث Enemy.js — إضافة بنية عامة لـStatus Effects (applyStatus, _updateStatusEffects, getSpeedMultiplier) تدعم "slow" (إبطاء) و"poison" (ضرر دوري). **لا يستخدمها "cannon" حاليًا** (ضرر مباشر بلا عنصر) — جاهزة فقط لأنواع دفاعات مستقبلية (Freeze Tower، Poison Tower...) دون أي تعديل لاحق بمنطق الأعداء. Critical مُنفَّذ بالكامل ضمن Defense._fire() (نسبة critChance وcritMultiplier من TYPES.cannon).
-تحديث Game.js — تهيئة ProjectileManager قبل DefenseManager (v0.9). كلاهما يُحدَّثان كل إطار داخل نفس الشرط الذي يجمّد EnemyManager عند Game Over (!WaveManager.isGameOver()). Debug HUD يعرض الآن عدد الدفاعات أيضًا.
-تحديث index.html — ترتيب سكربتات جديد (Combat قبل Defenses لأن Defense._fire() يستدعي ProjectileManager.spawn() مباشرة)، رقم الكاش الحالي ?v=11 على كل الملفات.
+- Never claim a feature works without testing it.
+- Never silently perform a large refactor.
+- Never replace a working system merely for aesthetics.
+- Never create duplicate systems.
+- Never introduce architecture without inspecting the existing implementation.
+- Never delete existing code without verifying that it is unused or intentionally replaced.
+- Never advance automatically to the next phase.
+- Never expand scope during implementation.
+- Every phase has a gate.
+- A gate must be passed before the next phase begins.
 
-سلوك معروف ومقبول بهذه المرحلة (ليس خطأ):
-نوع دفاع واحد فقط ("مدفع") — التنويع (قناص، تجميد، إلخ) لم يُطلب بعد، والبنية Data-Driven تسمح بإضافته لاحقًا بسهولة دون إعادة كتابة الأساس.
-لا سحب/نقل لدفاع موضوع بالفعل — الوضع بالنقر فقط. النقل (Drag & Drop) قسم 54 مؤجَّل.
-لا HP للدفاعات نفسها ولا هجوم من الأعداء عليها — الأعداء يستهدفون القاعدة فقط (كما بالمرحلتين 6/7)، الدفاعات لا يمكن تدميرها حاليًا.
-Status Effects بنية جاهزة غير مُستخدمة فعليًا (لا دفاع حالي يطبّق slow/poison) — ليست نقصًا، بل تجهيز مسبق مقصود.
-لا حفظ دائم (Save System) بعد — أي تقدّم (ذهب، دفاعات موضوعة، موجة حالية) يُفقد عند تحديث الصفحة.
+---
 
-⏳ بانتظار تأكيد المستخدم الفعلي على الهاتف:
-هل يظهر زر "وضع مدفع" بوضوح أسفل الشاشة، وهل الضغط عليه يدخل وضع البناء (يتحول لـ"✖ إلغاء" مع ظهور التلميح)؟
-هل النقر على مكان بعيد عن المسار يضع المدفع فعليًا ويخصم 40 ذهب؟ وهل النقر قرب المسار/فوق دفاع آخر يُظهر رسالة الرفض الصحيحة بدل الوضع؟
-هل يدور برج المدفع تلقائيًا نحو أقرب عدو داخل مداه، ويطلق مقذوفًا مضيئًا يتبع العدو فعليًا حتى يُصيبه؟
-هل يموت العدو المصاب بعد عدد كافٍ من الطلقات (حسب HP الموجة الحالية)، وهل الذهب يزيد عند قتله (المكافأة)؟
-هل يعمل كل هذا دون أي تعارض ملحوظ مع Pan/Zoom أو مع النقر على الصناديق/الموارد/مناطق البناء الأخرى؟
-قاعدة صارمة بالمشروع: لا تُصنَّف هذه المرحلة (8+9) "مكتملة نهائيًا" إلا بعد هذا التأكيد.
+2. Project Type
 
-الملفات الموجودة حاليًا في المشروع (الحالة الفعلية بعد التحديث)
-| الملف | المسار الكامل | الوظيفة | الحالة |
-|---|---|---|---|
-| README.md | /README.md | ملف GitHub افتراضي | ✅ موجود |
-| GAME_SPEC.md | /GAME_SPEC.md | وثيقة المواصفات الكاملة | ✅ (بلا تغيير بهذه الجولة) |
-| PROJECT_STATE.md | /PROJECT_STATE.md | هذا الملف | ✅ محدَّث |
-| index.html | /index.html | نقطة الدخول (?v=11) | ✅ محدَّث، بانتظار اختبار |
-| Config.js | /src/core/Config.js | الإعدادات المركزية (+ DEFENSES، + COMBAT) | ✅ محدَّث، بانتظار اختبار |
-| GameState.js | /src/core/GameState.js | حالة اللاعب (+ canAfford، + spendCurrency) | ✅ محدَّث، بانتظار اختبار |
-| Time.js | /src/core/Time.js | نظام الوقت المستقل | ✅ مرفوع ومُختبر |
-| Game.js | /src/core/Game.js | محرك اللعبة (+ ربط Defense/Projectile Managers) | ✅ محدَّث، بانتظار اختبار |
-| Ocean.js | /src/world/Ocean.js | نظام المحيط المتحرك | ✅ مرفوع ومُختبر |
-| Island.js | /src/world/Island.js | نظام الجزيرة | ✅ مرفوع ومُختبر |
-| Interactables.js | /src/world/Interactables.js | صناديق وموارد الخريطة | ✅ مرفوع ومُختبر |
-| DefenseMap.js | /src/world/DefenseMap.js | مسار + قاعدة + isPositionBuildable() | ✅ مرفوع ومُختبر |
-| EnemyPath.js | /src/enemies/EnemyPath.js | نظام مسار الأعداء | ✅ مرفوع ومُختبر |
-| Enemy.js | /src/enemies/Enemy.js | كيان العدو (+ Status Effects: applyStatus/slow/poison) | ✅ محدَّث، بانتظار اختبار |
-| EnemyManager.js | /src/enemies/EnemyManager.js | إدارة الأعداء | ✅ مرفوع ومُختبر |
-| WaveManager.js | /src/waves/WaveManager.js | نظام الموجات + Difficulty Scaling | ✅ مؤكَّد من المستخدم |
-| Projectile.js | /src/combat/Projectile.js | مقذوف واحد (Homing + ضرر عند الإصابة) | 🆕 جديد، بانتظار اختبار |
-| ProjectileManager.js | /src/combat/ProjectileManager.js | إدارة كل المقذوفات النشطة | 🆕 جديد، بانتظار اختبار |
-| Defense.js | /src/defenses/Defense.js | كيان الدفاع (استهداف + تصويب + إطلاق) | 🆕 جديد، بانتظار اختبار |
-| DefenseManager.js | /src/defenses/DefenseManager.js | وضع الدفاعات + تحديثها | 🆕 جديد، بانتظار اختبار |
-| TouchControls.js | /src/input/TouchControls.js | Pan + Zoom + Tap | ✅ مرفوع ومُختبر |
-| CameraController.js | /src/camera/CameraController.js | إدارة الكاميرا الثابتة | ✅ مرفوع ومُختبر |
-| InteractionController.js | /src/interaction/InteractionController.js | يوجّه النقرة (+ فرع وضع البناء) | ✅ محدَّث، بانتظار اختبار |
-| Toast.js | /src/ui/Toast.js | إشعار بصري | ✅ مرفوع ومُختبر (بلا تغيير) |
-| BaseHUD.js | /src/ui/BaseHUD.js | شريط HP القاعدة | ✅ مرفوع ومُختبر (بلا تغيير) |
-| WaveUI.js | /src/ui/WaveUI.js | عرض رقم/حالة الموجة | ✅ مؤكَّد من المستخدم |
-| GameOverUI.js | /src/ui/GameOverUI.js | شاشة نهاية اللعبة (+ تعطيل DefenseUI) | ✅ محدَّث، بانتظار اختبار |
-| DefenseUI.js | /src/ui/DefenseUI.js | زر وضع الدفاع + تلميح | 🆕 جديد، بانتظار اختبار |
+Infinity Depths is a:
 
-محذوف نهائيًا من المشروع (لا يجب أن يظهر أو يُشار له مجددًا كملف حالي):
-مجلد /src/player/ بالكامل (Player.js والنسخة القديمة من TouchControls.js بمنظور شخص أول)
+- 3D
+- Mobile-first
+- Strategy / Tower Defense / Base Building / Combat
+- Offline PvE first
+- Future Online PvP / Co-op
+- Long-term scalable game project
 
-الأنظمة المكتملة والمُختبرة فعليًا على الهاتف
-✅ Core Foundation
-✅ 3D World (Ocean + Island)
-✅ Camera & Touch Controls (Pan + Zoom، زاوية 58°)
-✅ World Interaction (صناديق/موارد + نقر + Toast)
-✅ Defense Map (مسار + نقطة ظهور + قاعدة/HP + مناطق بناء)
-✅ Enemies (حركة على المسار + HP + موت + وصول للقاعدة)
-✅ Waves (تصعيد الصعوبة + Game Over)
+The project is currently a browser-based Three.js prototype/application.
 
-الأنظمة المرفوعة بانتظار اختبار فعلي على الهاتف
-🔧 Defenses (وضع حر بالنقر + استهداف + تصويب)
-🔧 Combat (مقذوفات + ضرر + Critical)
+---
 
-الأنظمة الناقصة (حسب خارطة الطريق في GAME_SPEC.md)
-Economy (تحسين/متجر)، Progression، Merge Engine، Collection، Bosses، Weather + Day/Night، Quests، Advanced World، Visual Upgrade، Audio، Polish، Mobile Optimization، Camera/Terrain Collision (تحسين مؤجل)، Save System، Drag & Drop لنقل الدفاعات (تحسين مؤجل)، Offline Alpha، Balancing، Online Preparation (مستقبلي)، Online Multiplayer (مستقبلي)
+3. Current Technology
 
-ملاحظات مهمة للمتابعة
-المشروع يُبنى مرحلة بمرحلة حسب GAME_SPEC.md قسم 164.
-قاعدة صارمة: لا تُصنَّف أي مرحلة "مكتملة" إلا بعد تأكيد المستخدم الفعلي على الهاتف.
-قاعدة الـCache: أي تحديث لملف JS يتطلب رفع رقم ?v= داخل index.html (حاليًا 11 على كل الملفات).
-قرار مسجَّل ونهائي: كاميرا ثابتة الزاوية بدون جسم لاعب، وبدون أي نظام استكشاف. لا تتم إعادة اقتراح أي منهما إلا بطلب صريح جديد من المستخدم.
-قرار مسجَّل: وضع الدفاعات بالنقر (Tap-to-Place) وليس Drag & Drop. لا يُعاد اقتراح Drag & Drop إلا بطلب صريح جديد.
-لا يوجد Save System بعد — أي تقدّم يُفقد عند تحديث الصفحة.
-كل ملف كود يُعطى للمستخدم بشكل منفصل، مع مساره الكامل، بدون أي كتابة إضافية مطلوبة من المستخدم.
-رابط اللعبة المباشر: https://khalilbrda-arch.github.io/Infinity_depths/
+Rendering
 
-سجل المراحل (Changelog)
-[✅ مكتملة] المرحلة 1 — Core Foundation
-[✅ مكتملة] المرحلة 2 — 3D World
-[مُلغاة واستُبدلت] المرحلة 3 (نسخة قديمة) — Player (First Person)
-[✅ مكتملة] المرحلة 3 (النسخة الحالية) — Camera & Touch Controls
-[✅ مكتملة] المرحلة 4 — World Interaction (تم تأكيدها فعليًا على الهاتف من المستخدم)
-[✅ مكتملة] المرحلة 5 — Defense Map
-[✅ مكتملة] المرحلة 6 — Enemies
-[✅ مكتملة، مؤكَّدة من المستخدم] المرحلة 7 — Waves
-[🔧 الكود جاهز، بانتظار اختبار] المرحلة 8 — Defenses
-  ملفات جديدة: /src/defenses/Defense.js، /src/defenses/DefenseManager.js، /src/ui/DefenseUI.js
-  تحديثات: Config.js (DEFENSES)، GameState.js (canAfford/spendCurrency)، InteractionController.js (فرع وضع البناء)، GameOverUI.js (تعطيل DefenseUI)، index.html (v=11)
-[🔧 الكود جاهز، بانتظار اختبار] المرحلة 9 — Combat
-  ملفات جديدة: /src/combat/Projectile.js، /src/combat/ProjectileManager.js
-  تحديثات: Config.js (COMBAT)، Enemy.js (بنية Status Effects عامة)، Game.js (ربط ProjectileManager/DefenseManager بحلقة اللعبة)، index.html (v=11)
-بانتظار: تأكيد المستخدم الفعلي أن وضع المدافع، التصويب، إطلاق النار، وقتل الأعداء تعمل جميعًا بشكل صحيح على الهاتف دون تعارض مع باقي الأنظمة (راجع قسم "بانتظار تأكيد المستخدم" أعلاه)
+- Three.js
+- Current loaded version: "r128"
+- Loaded through CDN from "index.html"
 
-المرحلة القادمة (بعد تأكيد المرحلتين 8 و9)
-المرحلة 10 — ECONOMY (Gold، Rewards، Costs، Upgrades، Inventory) — قسم 140 بالمواصفات.
+Application Structure
+
+The current project uses manually loaded JavaScript files through "index.html".
+
+Current source areas:
+
+src/
+├── camera/
+├── combat/
+├── core/
+├── defenses/
+├── enemies/
+├── input/
+├── interaction/
+├── ui/
+├── waves/
+└── world/
+
+Current Build / Tooling State
+
+No formal package/build/test infrastructure has been identified yet.
+
+Currently there is no confirmed:
+
+- "package.json"
+- npm/Vite/Webpack pipeline
+- TypeScript pipeline
+- automated test runner
+- Android Studio project
+- Gradle Android project
+
+This is an architectural risk for later scaling and must be handled deliberately rather than prematurely.
+
+---
+
+4. Current Game Design Reality
+
+Camera
+
+Implemented:
+
+- Fixed-angle top-down camera
+- Approximately 58° angle
+- Pan
+- Zoom
+- Camera bounds
+- Mobile touch controls
+
+Not implemented:
+
+- Player-controlled character body
+- First-person camera
+- Third-person camera
+- WASD movement
+- Joysticks
+
+The player interacts with the world directly through the camera.
+
+---
+
+5. World
+
+Implemented:
+
+- 3D world
+- Island/base environment
+- Ocean
+- Basic environmental objects
+- Visible resources/interactables
+
+Current world rendering is still prototype-level.
+
+Visual assets currently rely heavily on Three.js primitive geometry.
+
+Not implemented:
+
+- Final production asset pipeline
+- Advanced environment system
+- Weather
+- Day/night
+- Advanced world simulation
+- Exploration
+- Fog of War
+
+Important Design Rule
+
+There is no exploration/fog-of-war system in the intended core design.
+
+The visible map is available to the player.
+
+Progression unlocks additional maps/levels rather than hiding the current map behind exploration.
+
+---
+
+6. Core
+
+Game State
+
+"src/core/GameState.js"
+
+Implemented responsibilities currently include core runtime state such as:
+
+- Base HP
+- Economy-related values used by the current prototype
+- Defense affordability/spending
+- Basic gameplay state
+
+Architectural Risk
+
+"GameState" may become a God Object as more systems are added.
+
+Current status:
+
+🟡 PARTIAL / MEDIUM RISK
+
+Do not rewrite it blindly.
+
+The Architecture Foundation phase must determine which state belongs to:
+
+- global/session state
+- economy
+- progression
+- combat
+- world
+- save data
+- UI state
+
+---
+
+7. Time
+
+"src/core/Time.js"
+
+Implemented:
+
+- Central game clock
+- Delta time
+- Elapsed time
+- Three.js clock integration
+
+Current status:
+
+✅ WORKING
+
+---
+
+8. Enemies
+
+Directory:
+
+src/enemies/
+
+Current files:
+
+Enemy.js
+EnemyManager.js
+EnemyPath.js
+
+Implemented:
+
+- Enemy entities
+- Enemy movement
+- Enemy path following
+- Enemy management
+- Base damage interaction
+- Enemy health/damage flow
+- Status-effect structure for future expansion
+
+Current enemy visuals remain prototype-level.
+
+Current status:
+
+✅ CORE SYSTEM PRESENT
+
+---
+
+9. Waves
+
+Directory:
+
+src/waves/
+
+Current file:
+
+WaveManager.js
+
+Implemented:
+
+- Wave progression
+- Enemy spawning
+- Wave state
+- Integration with enemy management
+
+Wave system was previously confirmed as a completed core gameplay system.
+
+Current status:
+
+✅ CORE SYSTEM PRESENT
+
+---
+
+10. Defenses
+
+Directory:
+
+src/defenses/
+
+Current files:
+
+Defense.js
+DefenseManager.js
+
+UI:
+
+src/ui/DefenseUI.js
+
+Implemented:
+
+- Defense entities
+- Defense management
+- Defense configuration
+- Defense placement
+- Defense affordability check
+- Economy spending through current GameState integration
+- Tap-to-place interaction
+- Free defense placement
+
+Current design:
+
+Free placement, not fixed slots.
+
+Not implemented:
+
+- Drag/move already placed defenses
+
+That feature is intentionally deferred.
+
+Current status:
+
+🟡 IMPLEMENTED — AWAITING FINAL MOBILE REGRESSION CONFIRMATION
+
+---
+
+11. Combat
+
+Directory:
+
+src/combat/
+
+Current files:
+
+Projectile.js
+ProjectileManager.js
+
+Implemented:
+
+- Projectile entities
+- Projectile management
+- Defense → projectile → enemy interaction
+- Combat configuration
+- Enemy damage flow
+- Status-effect structure
+
+Combat was integrated with the existing Defense and Enemy systems rather than rebuilding them.
+
+Current status:
+
+🟡 IMPLEMENTED — AWAITING FINAL MOBILE REGRESSION CONFIRMATION
+
+---
+
+12. Interaction
+
+Directory:
+
+src/interaction/
+
+Current file:
+
+InteractionController.js
+
+Implemented:
+
+- Tap interaction
+- World interaction
+- Defense placement branch
+- Interaction with visible world objects
+
+Current status:
+
+✅ CORE SYSTEM PRESENT
+
+---
+
+13. Input
+
+Directory:
+
+src/input/
+
+Current file:
+
+TouchControls.js
+
+Implemented:
+
+- Touch input
+- Pan
+- Zoom
+- Mobile-oriented camera interaction
+
+Current status:
+
+✅ CORE SYSTEM PRESENT
+
+---
+
+14. UI
+
+Current UI systems:
+
+src/ui/
+├── BaseHUD.js
+├── DefenseUI.js
+├── GameOverUI.js
+├── Toast.js
+└── WaveUI.js
+
+Implemented:
+
+- Base HP display
+- Wave information
+- Defense placement UI
+- Toast notifications
+- Game-over state
+- Defense placement disabling after game over
+
+Current UI is functional but not final production UX.
+
+Current status:
+
+🟡 FUNCTIONAL / PROTOTYPE UI
+
+---
+
+15. Save System
+
+Current status:
+
+🔴 NOT IMPLEMENTED
+
+Currently:
+
+- Reloading the page loses runtime progress.
+- No versioned save schema exists in code.
+- No migration system exists.
+- No backup/recovery system exists.
+- No offline persistence system exists.
+
+Save architecture is planned during the Architecture Foundation phase.
+
+---
+
+16. Economy
+
+Current prototype contains basic economy interaction required by existing defense placement.
+
+However, the full Economy system is not implemented.
+
+Missing:
+
+- Complete resource model
+- Resource ownership architecture
+- Economy events
+- Economy persistence
+- Economy balancing
+- Production/generation systems
+- Upgrade costs
+- Full economy UI
+- Save integration
+
+Status:
+
+🔴 NOT COMPLETE
+
+Important:
+
+Economy must not be expanded before the Architecture Foundation gate.
+
+---
+
+17. Progression
+
+Current status:
+
+🔴 NOT IMPLEMENTED AS A COMPLETE SYSTEM
+
+Missing:
+
+- XP/progression model
+- Level progression
+- Unlock contracts
+- Progression persistence
+- Progression UI
+- Map/level unlock system
+
+---
+
+18. Merge System
+
+Current status:
+
+🔴 NOT IMPLEMENTED
+
+Planned architecture requires:
+
+- Merge definitions
+- Validation
+- Input/output contracts
+- Cost handling
+- Result generation
+- Collection integration
+- Progression integration
+- Save integration
+
+---
+
+19. Collection / Inventory
+
+Current status:
+
+🔴 NOT IMPLEMENTED
+
+The final system must eventually support scalable content without rewriting core systems.
+
+---
+
+20. Boss System
+
+Current status:
+
+🔴 NOT IMPLEMENTED
+
+Planned future system.
+
+No boss implementation should be introduced before the relevant architecture gates.
+
+---
+
+21. Weather / Day & Night
+
+Current status:
+
+🔴 NOT IMPLEMENTED
+
+Future world systems.
+
+---
+
+22. Quests
+
+Current status:
+
+🔴 NOT IMPLEMENTED
+
+Future system.
+
+---
+
+23. Advanced World Systems
+
+Current status:
+
+🔴 NOT IMPLEMENTED
+
+Includes future systems such as:
+
+- Advanced world simulation
+- Events
+- NPC systems
+- Story systems
+- Environmental systems
+
+These must be added through the Content Pipeline rather than ad-hoc code expansion.
+
+---
+
+24. Audio
+
+Current status:
+
+🔴 NOT IMPLEMENTED AS A PRODUCTION SYSTEM
+
+---
+
+25. VFX
+
+Current status:
+
+🔴 NOT IMPLEMENTED AS A PRODUCTION SYSTEM
+
+---
+
+26. Visual Production
+
+Current visual implementation is prototype-level.
+
+Current assets are primarily:
+
+- Three.js primitives
+- Prototype materials
+- Placeholder-style enemy/world visuals
+
+Final production asset pipeline is not yet implemented.
+
+---
+
+27. Performance
+
+No formal performance baseline currently exists.
+
+Missing measured baselines for:
+
+- FPS
+- CPU
+- GPU
+- memory
+- entity count
+- draw calls
+- loading time
+- mobile thermal/performance behavior
+
+Performance work must become systematic during the Architecture Foundation and later Performance phases.
+
+---
+
+28. Mobile
+
+The project is designed Mobile-First.
+
+Existing systems were designed around touch interaction.
+
+However, final device compatibility has not yet been completed.
+
+Required later testing includes:
+
+- touch reliability
+- different screen sizes
+- different aspect ratios
+- performance
+- memory
+- orientation
+- browser compatibility
+- long-session stability
+
+---
+
+29. Android
+
+No native Android project is currently present in the repository.
+
+Do not introduce Android packaging prematurely.
+
+The game architecture must first become stable.
+
+---
+
+30. Automated Testing
+
+Current status:
+
+🔴 NOT IMPLEMENTED
+
+No formal automated test infrastructure has been identified.
+
+Future testing must eventually include:
+
+1. Static checks
+2. Unit tests
+3. Integration tests
+4. Gameplay tests
+5. Regression tests
+6. Mobile tests
+7. Performance tests
+
+---
+
+31. Event Architecture
+
+Current project does not yet have a centralized event architecture.
+
+Some systems communicate through direct calls.
+
+Example risk:
+
+EnemyManager
+    ↓
+GameState
+
+Future architecture should support events such as:
+
+EnemyDeathEvent
+    ↓
+Reward System
+Economy
+Quest System
+Statistics
+UI
+
+This must be introduced carefully during the Architecture Foundation phase.
+
+---
+
+32. Data Contracts
+
+The full data-contract architecture is not yet implemented.
+
+Planned contracts include:
+
+EnemyDefinition
+DefenseDefinition
+BossDefinition
+RewardDefinition
+UpgradeDefinition
+QuestDefinition
+MapDefinition
+MergeDefinition
+
+Existing configuration is partially data-driven, especially defense configuration.
+
+Do not duplicate configuration systems.
+
+---
+
+33. Asset Contract
+
+Planned architecture:
+
+Gameplay
+    ↓
+Visual ID
+    ↓
+Asset Registry
+    ↓
+Model / Texture / Animation / VFX
+
+This is not yet implemented as a complete production pipeline.
+
+---
+
+34. Save Contract
+
+Planned save contract:
+
+Save Version
+Schema
+Validation
+Migration
+Backup
+Recovery
+
+Current implementation:
+
+None
+
+---
+
+35. Current Architecture Assessment
+
+Area| Status
+Core| 🟡 Partial
+Time| ✅ Working
+Camera| ✅ Working
+Touch Input| ✅ Working
+World| 🟡 Prototype
+Interaction| ✅ Present
+Enemies| ✅ Present
+Waves| ✅ Present
+Defenses| 🟡 Awaiting final mobile confirmation
+Combat| 🟡 Awaiting final mobile confirmation
+UI| 🟡 Functional prototype
+Economy| 🔴 Incomplete
+Progression| 🔴 Missing
+Merge| 🔴 Missing
+Collection| 🔴 Missing
+Bosses| 🔴 Missing
+Weather| 🔴 Missing
+Day/Night| 🔴 Missing
+Quests| 🔴 Missing
+Advanced World| 🔴 Missing
+Save| 🔴 Missing
+Audio| 🔴 Missing
+VFX| 🔴 Missing
+Production Assets| 🔴 Missing
+Automated Tests| 🔴 Missing
+Performance Baseline| 🔴 Missing
+Android Project| 🔴 Missing
+Online Architecture| 🔴 Future
+Multiplayer| 🔴 Future
+
+---
+
+36. Repository Structure
+
+Current known structure:
+
+/
+├── index.html
+├── README.md
+├── GAME_SPEC.md
+├── PROJECT_STATE.md
+└── src/
+    ├── camera/
+    │   └── CameraController.js
+    ├── combat/
+    │   ├── Projectile.js
+    │   └── ProjectileManager.js
+    ├── core/
+    │   ├── Config.js
+    │   ├── Game.js
+    │   ├── GameState.js
+    │   └── Time.js
+    ├── defenses/
+    │   ├── Defense.js
+    │   └── DefenseManager.js
+    ├── enemies/
+    │   ├── Enemy.js
+    │   ├── EnemyManager.js
+    │   └── EnemyPath.js
+    ├── input/
+    │   └── TouchControls.js
+    ├── interaction/
+    │   └── InteractionController.js
+    ├── ui/
+    │   ├── BaseHUD.js
+    │   ├── DefenseUI.js
+    │   ├── GameOverUI.js
+    │   ├── Toast.js
+    │   └── WaveUI.js
+    ├── waves/
+    │   └── WaveManager.js
+    └── world/
+        ├── DefenseMap.js
+        ├── Interactables.js
+        ├── Island.js
+        └── Ocean.js
+
+---
+
+37. Important Existing Decisions
+
+These decisions must not be accidentally reversed:
+
+Camera
+
+Fixed-angle top-down around 58°.
+
+Player
+
+No player body.
+
+Movement
+
+No WASD and no joystick.
+
+Interaction
+
+Direct tap interaction.
+
+Defense Placement
+
+Tap-to-place.
+
+Defense Layout
+
+Free placement.
+
+Exploration
+
+No exploration/fog of war.
+
+Existing Defense System
+
+Do not rebuild merely to introduce future architecture.
+
+Existing Combat System
+
+Do not rebuild merely to introduce future architecture.
+
+Dragging Defenses
+
+Deferred.
+
+Save
+
+Not implemented yet.
+
+Old Player Directory
+
+"src/player/" was removed and must not be reintroduced unless the design explicitly changes.
+
+---
+
+38. Cache-Busting Rule
+
+Current "index.html" uses JavaScript cache query parameters.
+
+Current known version:
+
+?v=11
+
+Whenever JavaScript files are changed, the corresponding cache version must be incremented as required so mobile browsers do not continue using stale code.
+
+This must be verified rather than assumed after future code changes.
+
+---
+
+39. Phase Position
+
+The project must follow the approved development sequence.
+
+Current position:
+
+PHASE 0 AUDIT → COMPLETED
+
+Next:
+
+PHASE 1 — PROJECT MEMORY
+
+After Phase 1:
+
+PHASE 2 — SOURCE OF TRUTH
+
+Then:
+
+PHASE 3 — SYSTEM OWNERSHIP
+
+Then:
+
+PHASE 4 — ARCHITECTURE FOUNDATION
+
+Then mandatory:
+
+ARCHITECTURE GATE
+
+Only after that:
+
+PHASE 5 — VERTICAL SLICE
+
+Then its gate.
+
+Only after those gates may:
+
+PHASE 6 — ECONOMY
+
+begin.
+
+---
+
+40. Phase 0 Audit Result
+
+The repository has been inspected at the currently accessible source level.
+
+Known facts:
+
+- Core gameplay structure exists.
+- World structure exists.
+- Camera/input systems exist.
+- Enemy system exists.
+- Wave system exists.
+- Defense system exists.
+- Combat/projectile system exists.
+- Basic UI exists.
+- Save system does not exist.
+- Automated testing does not exist.
+- Formal build tooling has not been identified.
+- Android project does not exist.
+- Full data contracts do not exist.
+- Full event architecture does not exist.
+- Production asset pipeline does not exist.
+- Performance baseline does not exist.
+
+No major duplicate system was identified during the initial audit.
+
+The project is currently a functional prototype foundation, not yet a production-ready architecture.
+
+---
+
+41. Current Gate
+
+Phase 0 Gate
+
+STATUS: PASSED FOR DOCUMENTATION
+
+Meaning:
+
+We have enough knowledge of the current repository to begin documenting the project architecture and development memory.
+
+This does not mean:
+
+- the game is production-ready
+- all existing systems are fully tested
+- mobile compatibility is complete
+- architecture is finalized
+- future phases are approved automatically
+
+---
+
+42. Immediate Next Step
+
+The next approved action is:
+
+Create/update the remaining Phase 1 project-memory documents one at a time.
+
+Order:
+
+1. "PROJECT_STATE.md" ← this file
+2. "GAME_SPEC.md"
+3. "ARCHITECTURE.md"
+4. "ROADMAP.md"
+5. "TECHNICAL_RULES.md"
+6. "DECISIONS.md"
+7. "CHANGELOG.md"
+8. "TESTING.md"
+9. "SAVE_SCHEMA.md"
+10. "CONTENT_PIPELINE.md"
+11. "AI_DEVELOPMENT_PROTOCOL.md"
+12. "ARCHITECTURE_DEBT.md"
+
+After the documentation gate is complete, implementation resumes only according to the approved development protocol.
+
+---
+
+43. Golden Rule
+
+«Infinity Depths must grow by controlled integration, not uncontrolled accumulation.»
+
+Every new system must have:
+
+Scope
+↓
+Owner
+↓
+Data Contract
+↓
+Dependencies
+↓
+Implementation
+↓
+Tests
+↓
+Regression
+↓
+Performance
+↓
+Mobile Verification
+↓
+Documentation
+↓
+Gate
+
+No shortcut replaces this process.
