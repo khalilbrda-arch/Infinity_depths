@@ -38,15 +38,18 @@ const GameState = {
     return this.interactions.openedIds.includes(id);
   },
 
-  registerInteraction(id, reward) {
+  /**
+   * تسجيل أن اللاعب تفاعل مع عنصر قابل للتفاعل.
+   *
+   * ملكية المكافآت المالية أصبحت لدى EconomySystem.
+   * هذا المسار مسؤول فقط عن حالة التفاعل القابلة للحفظ.
+   */
+  registerInteraction(id) {
     if (this.hasInteracted(id)) {
       return false;
     }
 
     this.interactions.openedIds.push(id);
-
-    this.player.currency +=
-      Math.max(0, reward || 0);
 
     return true;
   },
@@ -97,7 +100,10 @@ const GameState = {
   },
 
   /**
-   * هل يملك اللاعب ذهبًا كافيًا؟ (المرحلة 8 — تكلفة وضع دفاع).
+   * هل يملك اللاعب ذهبًا كافيًا؟
+   *
+   * سيبقى هذا الأسلوب مؤقتًا داخل GameState
+   * إلى أن يتم نقل ملكية الرصيد بالكامل إلى EconomySystem.
    */
   canAfford(cost) {
     return (
@@ -107,7 +113,10 @@ const GameState = {
   },
 
   /**
-   * خصم ذهب (المرحلة 8). يفشل بأمان إذا كان الرصيد غير كافٍ.
+   * خصم ذهب.
+   *
+   * سيبقى هذا الأسلوب مؤقتًا داخل GameState
+   * كطبقة تخزين منخفضة المستوى للرصيد.
    */
   spendCurrency(amount) {
     const cost =
@@ -129,6 +138,10 @@ const GameState = {
    * مكافأة قتل عدو.
    *
    * XP الحقيقي يمكن توسيعه لاحقًا.
+   *
+   * ملاحظة:
+   * EconomySystem يستدعي هذه العملية حاليًا،
+   * إلى أن يتم نقل ملكية الرصيد بالكامل.
    */
   rewardEnemyKill(reward) {
     const gold =
