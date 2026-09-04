@@ -21,7 +21,13 @@ Severity: MEDIUM
 
 Problem
 
-"src/core/GameState.js" currently contains several types of runtime state.
+"src/core/GameState.js" currently contains several types of runtime state, including:
+
+- Base state
+- Economy state
+- Progression-related state
+- Interaction state
+- Unlock state
 
 As the project grows, this can turn into a God Object.
 
@@ -52,6 +58,7 @@ Existing working systems must be preserved and migrated only when justified.
 
 2. Missing Event Architecture
 
+ID: AD-002
 Status: OPEN
 Severity: MEDIUM
 
@@ -65,7 +72,7 @@ Risk
 
 As more systems are introduced, direct dependencies may increase.
 
-Example future relationship:
+Example:
 
 Enemy Death
     ↓
@@ -97,6 +104,7 @@ Do not create an event for every interaction.
 
 3. Missing Data Contracts
 
+ID: AD-003
 Status: OPEN
 Severity: HIGH
 
@@ -131,6 +139,7 @@ Content should become primarily data-driven.
 
 4. Missing Asset Contract
 
+ID: AD-004
 Status: OPEN
 Severity: MEDIUM
 
@@ -160,6 +169,7 @@ Establish an asset contract before large-scale visual production.
 
 5. Missing Save Architecture
 
+ID: AD-005
 Status: OPEN
 Severity: HIGH
 
@@ -188,6 +198,7 @@ Define the save contract before persistent progression systems expand.
 
 6. Missing Automated Testing Infrastructure
 
+ID: AD-006
 Status: OPEN
 Severity: HIGH
 
@@ -215,6 +226,7 @@ Establish the minimum testing foundation during Architecture Foundation.
 
 7. Missing Performance Baseline
 
+ID: AD-007
 Status: OPEN
 Severity: HIGH
 
@@ -246,6 +258,7 @@ Create a measurable baseline before large-scale optimization.
 
 8. Manual Script Loading / Build Infrastructure
 
+ID: AD-008
 Status: OPEN
 Severity: MEDIUM
 
@@ -278,6 +291,7 @@ Migration must only occur if justified by project requirements.
 
 9. Prototype-Level Visual Architecture
 
+ID: AD-009
 Status: OPEN
 Severity: LOW / MEDIUM
 
@@ -297,6 +311,7 @@ Introduce the production asset pipeline after the gameplay architecture is stabl
 
 10. Mobile Compatibility Coverage
 
+ID: AD-010
 Status: OPEN
 Severity: HIGH
 
@@ -328,6 +343,7 @@ Do not claim mobile compatibility is complete without real-device verification.
 
 11. Production Android Architecture
 
+ID: AD-011
 Status: DEFERRED
 
 Problem
@@ -348,25 +364,88 @@ After the web/game architecture and gameplay foundation are sufficiently mature.
 
 12. Direct System Coupling
 
+ID: AD-012
 Status: OPEN
 Severity: MEDIUM
 
 Problem
 
-Some existing systems communicate through direct references and calls.
+The Phase 3 ownership audit confirmed several direct cross-domain dependencies in the current implementation.
+
+Confirmed Relationships
+
+EnemyManager → GameState
+
+"EnemyManager" currently:
+
+- Applies base damage through "GameState.damageBase()"
+- Grants enemy rewards through "GameState.rewardEnemyKill()"
+
+This means the Enemy System currently performs side effects belonging to World/Base and Economy responsibilities.
+
+DefenseManager → GameState
+
+"DefenseManager" currently:
+
+- Checks affordability through "GameState.canAfford()"
+- Spends currency through "GameState.spendCurrency()"
+
+This means Defense System currently performs Economy operations directly.
+
+Projectile → EnemyManager
+
+"Projectile" currently resolves a hit by directly calling:
+
+"EnemyManager.damageEnemy()"
+
+This creates direct Combat → Enemy System coupling.
+
+WaveManager → GameState
+
+"WaveManager" currently reads base-destruction state directly through:
+
+"GameState.isBaseDestroyed()"
+
+This creates direct Wave System → global state coupling.
 
 Risk
 
-Future systems such as quests, rewards, statistics, audio, and VFX may increase coupling.
+As additional systems are introduced, these direct dependencies could expand into a tightly coupled architecture.
+
+Potential future consumers include:
+
+- Economy
+- Progression
+- Quests
+- Statistics
+- Audio
+- VFX
+- UI
+- Save
 
 Required Resolution
 
-During Phase 3 and Phase 4, document system ownership and identify relationships that genuinely require decoupling.
+During Architecture Foundation:
+
+1. Define authoritative ownership for each domain.
+2. Separate domain state from the current "GameState" where justified.
+3. Introduce commands or events where they genuinely reduce coupling.
+4. Preserve existing gameplay behavior during migration.
+5. Test each migration independently.
+
+Constraint
+
+Do not rewrite these systems during Phase 3 merely to eliminate the coupling.
+
+The confirmed coupling is documented here as architectural debt.
+
+Actual remediation belongs to Phase 4 — Architecture Foundation.
 
 ---
 
 13. Prototype UI Architecture
 
+ID: AD-013
 Status: OPEN
 Severity: LOW / MEDIUM
 
@@ -390,6 +469,7 @@ Gameplay systems remain authoritative.
 
 14. Cache-Busting Dependency
 
+ID: AD-014
 Status: OPEN
 Severity: LOW
 
@@ -409,7 +489,32 @@ This value must be verified against the actual repository before future changes.
 
 ---
 
-15. Architecture Debt Rules
+15. Phase 3 Ownership Audit — Confirmed Findings
+
+The following ownership findings were confirmed by inspecting the current implementation:
+
+System| Owns Correctly| Confirmed Cross-Domain Responsibility
+Enemy| Enemy instance state, HP, movement, status, lifecycle| None directly
+EnemyManager| Enemy collection, spawning, cleanup| Base damage + enemy rewards
+WaveManager| Wave state, timing, spawn scheduling| Reads global base state
+Defense| Defense instance state, targeting/attack behavior| None directly
+DefenseManager| Defense collection, placement, cleanup| Economy affordability/spending
+Projectile| Projectile state, movement, lifetime| Direct enemy damage resolution
+ProjectileManager| Projectile collection/lifecycle| None directly
+BaseHUD| Base HP presentation| None
+GameState| Central runtime state| Multiple domain responsibilities
+
+Conclusion
+
+The audit confirms that the current architecture is functional but contains known cross-domain coupling.
+
+No emergency rewrite is justified.
+
+The correct action is to carry these findings into Phase 4 Architecture Foundation.
+
+---
+
+16. Architecture Debt Rules
 
 All architecture debt follows these rules:
 
@@ -423,10 +528,12 @@ All architecture debt follows these rules:
 8. Performance optimization must be measurement-driven.
 9. New systems require explicit ownership.
 10. Resolved debt must be documented as resolved.
+11. Phase gates must not be bypassed.
+12. Ownership violations discovered during audits must be documented before remediation.
 
 ---
 
-16. Current Priority
+17. Current Priority
 
 The current priority order is:
 
@@ -444,7 +551,7 @@ No feature expansion should bypass these stages.
 
 ---
 
-17. Current Debt Summary
+18. Current Debt Summary
 
 ID| Area| Severity| Status
 AD-001| GameState boundaries| Medium| Open
@@ -464,12 +571,89 @@ AD-014| Cache busting| Low| Open
 
 ---
 
-Current Gate
+19. Phase 3 Gate Preparation
 
-PHASE 1 — PROJECT MEMORY
+Phase
 
-These files are documentation artifacts only.
+PHASE 3 — SYSTEM OWNERSHIP
 
-They do not authorize implementation of the systems listed as missing.
+Audit Status
 
-Phase 2 may begin only after all required Phase 1 documentation is verified as present and internally consistent.
+AUDIT COMPLETE
+
+The current implementation has been inspected at the system-ownership level.
+
+Confirmed:
+
+- Enemy ownership boundaries
+- Wave ownership boundaries
+- Defense ownership boundaries
+- Projectile ownership boundaries
+- UI presentation boundaries
+- GameState responsibility growth
+- Direct cross-domain dependencies
+
+Important Decision
+
+The confirmed ownership violations are documented rather than prematurely refactored.
+
+Actual architectural remediation is deferred to:
+
+PHASE 4 — ARCHITECTURE FOUNDATION
+
+This prevents Phase 3 from turning into an uncontrolled refactor.
+
+Gate Condition
+
+Phase 3 may be considered complete when:
+
+- Ownership findings are documented.
+- Known violations are explicitly assigned to future remediation.
+- No unapproved implementation expansion is introduced.
+- The project remains behaviorally unchanged by the audit/documentation step.
+
+---
+
+20. Current Gate
+
+PHASE 3 — SYSTEM OWNERSHIP
+
+STATUS: AUDIT COMPLETE — AWAITING GATE
+
+The repository is ready for the Phase 3 ownership gate.
+
+Do not begin Phase 4 implementation automatically.
+
+Phase 4 requires explicit approval after the Phase 3 gate.
+
+---
+
+21. Golden Rule
+
+«Infinity Depths must grow by controlled integration, not uncontrolled accumulation.»
+
+Every new system must have:
+
+Scope
+↓
+Owner
+↓
+Data Contract
+↓
+Dependencies
+↓
+Implementation
+↓
+Tests
+↓
+Regression
+↓
+Performance
+↓
+Mobile Verification
+↓
+Documentation
+↓
+Gate
+
+No shortcut replaces this process.
