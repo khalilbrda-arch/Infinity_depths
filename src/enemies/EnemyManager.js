@@ -12,7 +12,10 @@
  *  - منح المكافآت.
  *
  * Waves ليست هنا.
- * ستأتي في المرحلة 7.
+ *
+ * Phase 4:
+ *  - DataContracts تتحقق من بيانات العدو عند نقطة الإنشاء.
+ *  - لا يملك EnemyManager تعريفات المحتوى الثابتة.
  */
 
 const EnemyManager = {
@@ -45,46 +48,65 @@ const EnemyManager = {
   /**
    * إنشاء عدو جديد.
    *
-   * هذه الدالة هي الواجهة التي سيستخدمها
-   * WaveManager لاحقًا.
+   * هذه الدالة هي حدود دخول بيانات العدو
+   * إلى الحالة التشغيلية Enemy.
+   *
+   * DataContracts تتحقق من البيانات قبل إنشاء
+   * instance جديد.
    */
   spawnEnemy(data = {}) {
     if (!this.initialized) {
       return null;
     }
 
+    const enemyData = {
+      id:
+        data.id ||
+        `enemy_${this.nextId++}`,
+
+      name:
+        data.name ||
+        "Basic Enemy",
+
+      type:
+        data.type ||
+        "basic",
+
+      maxHp:
+        data.maxHp ?? 20,
+
+      speed:
+        data.speed ?? 2.2,
+
+      armor:
+        data.armor ?? 0,
+
+      resistance:
+        data.resistance ?? 0,
+
+      damage:
+        data.damage ?? 10,
+
+      reward:
+        data.reward ?? 5,
+    };
+
+    if (
+      typeof DataContracts !== "undefined" &&
+      !DataContracts.validateEnemyDefinition(
+        enemyData
+      )
+    ) {
+      console.error(
+        "EnemyManager: invalid enemy definition.",
+        enemyData
+      );
+
+      return null;
+    }
+
     const enemy =
-      new Enemy({
-        id:
-          data.id ||
-          `enemy_${this.nextId++}`,
-
-        name:
-          data.name ||
-          "Basic Enemy",
-
-        type:
-          data.type ||
-          "basic",
-
-        maxHp:
-          data.maxHp ?? 20,
-
-        speed:
-          data.speed ?? 2.2,
-
-        armor:
-          data.armor ?? 0,
-
-        resistance:
-          data.resistance ?? 0,
-
-        damage:
-          data.damage ?? 10,
-
-        reward:
-          data.reward ?? 5,
-      });
+      new Enemy(enemyData);
 
     this.enemies.push(enemy);
 
@@ -105,11 +127,10 @@ const EnemyManager = {
   },
 
   /**
-   * عدو تجريبي واحد للمرحلة 6.
+   * عدو تجريبي واحد.
    *
-   * هذا ليس Wave System.
-   * سيتم حذفه واستبداله بـ WaveManager
-   * عندما نصل إلى المرحلة 7.
+   * يبقى متوافقًا مع النظام الحالي،
+   * لكنه لا يُستخدم من Game.js.
    */
   spawnTestEnemy() {
     return this.spawnEnemy({
@@ -186,7 +207,7 @@ const EnemyManager = {
   /**
    * إلحاق الضرر بعدو.
    *
-   * ستستخدمها DefenseManager في المرحلة 9.
+   * ستستخدمها أنظمة القتال الحالية.
    */
   damageEnemy(
     enemy,
@@ -251,7 +272,9 @@ const EnemyManager = {
    * التعامل مع موت العدو.
    */
   _handleEnemyDeath(enemy) {
-    if (!enemy) return;
+    if (!enemy) {
+      return;
+    }
 
     GameState.rewardEnemyKill(
       enemy.reward
