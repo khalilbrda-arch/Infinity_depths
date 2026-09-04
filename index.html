@@ -180,100 +180,102 @@
        CORE
   ========================================== -->
 
-  <script src="src/core/Config.js?v=11"></script>
+  <script src="src/core/Config.js?v=12"></script>
 
-  <script src="src/core/DataContracts.js?v=11"></script>
+  <script src="src/core/DataContracts.js?v=12"></script>
 
-  <script src="src/core/GameState.js?v=11"></script>
+  <script src="src/core/GameState.js?v=12"></script>
 
-  <script src="src/core/Time.js?v=11"></script>
+  <script src="src/core/Time.js?v=12"></script>
 
 
   <!-- =========================================
        UI
   ========================================== -->
 
-  <script src="src/ui/Toast.js?v=11"></script>
+  <script src="src/ui/Toast.js?v=12"></script>
 
-  <script src="src/ui/BaseHUD.js?v=11"></script>
+  <script src="src/ui/BaseHUD.js?v=12"></script>
 
-  <script src="src/ui/WaveUI.js?v=11"></script>
+  <script src="src/ui/WaveUI.js?v=12"></script>
 
-  <script src="src/ui/GameOverUI.js?v=11"></script>
+  <script src="src/ui/GameOverUI.js?v=12"></script>
 
-  <script src="src/ui/DefenseUI.js?v=11"></script>
+  <script src="src/ui/DefenseUI.js?v=12"></script>
 
 
   <!-- =========================================
        WORLD
   ========================================== -->
 
-  <script src="src/world/Ocean.js?v=11"></script>
+  <script src="src/world/Ocean.js?v=12"></script>
 
-  <script src="src/world/Island.js?v=11"></script>
+  <script src="src/world/Island.js?v=12"></script>
 
-  <script src="src/world/Interactables.js?v=11"></script>
+  <script src="src/world/Interactables.js?v=12"></script>
 
-  <script src="src/world/DefenseMap.js?v=11"></script>
+  <script src="src/world/DefenseMap.js?v=12"></script>
 
 
   <!-- =========================================
        ENEMIES — STAGE 6
   ========================================== -->
 
-  <script src="src/enemies/EnemyPath.js?v=11"></script>
+  <script src="src/enemies/EnemyPath.js?v=12"></script>
 
-  <script src="src/enemies/Enemy.js?v=11"></script>
+  <script src="src/enemies/Enemy.js?v=12"></script>
 
-  <script src="src/enemies/EnemyManager.js?v=11"></script>
+  <script src="src/enemies/EnemyManager.js?v=12"></script>
 
 
   <!-- =========================================
        WAVES — STAGE 7
   ========================================== -->
 
-  <script src="src/waves/WaveManager.js?v=11"></script>
+  <script src="src/waves/WaveManager.js?v=12"></script>
 
 
   <!-- =========================================
-       COMBAT — STAGE 9 (Projectiles)
-       يجب تحميلها قبل الدفاعات لأن Defense._fire() يستدعي
-       ProjectileManager.spawn() مباشرة.
+       COMBAT — ARCHITECTURE FOUNDATION
+       CombatSystem يجب تحميله قبل Projectile
+       لأن Projectile يعتمد عليه لحل الإصابة.
   ========================================== -->
 
-  <script src="src/combat/Projectile.js?v=11"></script>
+  <script src="src/combat/CombatSystem.js?v=12"></script>
 
-  <script src="src/combat/ProjectileManager.js?v=11"></script>
+  <script src="src/combat/Projectile.js?v=12"></script>
+
+  <script src="src/combat/ProjectileManager.js?v=12"></script>
 
 
   <!-- =========================================
        DEFENSES — STAGE 8
   ========================================== -->
 
-  <script src="src/defenses/Defense.js?v=11"></script>
+  <script src="src/defenses/Defense.js?v=12"></script>
 
-  <script src="src/defenses/DefenseManager.js?v=11"></script>
+  <script src="src/defenses/DefenseManager.js?v=12"></script>
 
 
   <!-- =========================================
        INPUT
   ========================================== -->
 
-  <script src="src/input/TouchControls.js?v=11"></script>
+  <script src="src/input/TouchControls.js?v=12"></script>
 
 
   <!-- =========================================
        CAMERA
   ========================================== -->
 
-  <script src="src/camera/CameraController.js?v=11"></script>
+  <script src="src/camera/CameraController.js?v=12"></script>
 
 
   <!-- =========================================
        INTERACTION
   ========================================== -->
 
-  <script src="src/interaction/InteractionController.js?v=11"></script>
+  <script src="src/interaction/InteractionController.js?v=12"></script>
 
 
   <!-- =========================================
@@ -281,7 +283,7 @@
        يجب أن يكون الأخير
   ========================================== -->
 
-  <script src="src/core/Game.js?v=11"></script>
+  <script src="src/core/Game.js?v=12"></script>
 
 </body>
 
