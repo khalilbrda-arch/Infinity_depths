@@ -4,21 +4,20 @@
  * المرحلة 8 — Defense Manager + Placement (قسم 138 بالمواصفات).
  *
  * مسؤول عن:
- *  - وضع الدفاعات (Tap-to-Place — انظر ملاحظة أسفله).
- *  - التحقق من صلاحية المكان (DefenseMap.isPositionBuildable من المرحلة 5).
- *  - خصم التكلفة (GameState.spendCurrency).
+ *  - وضع الدفاعات (Tap-to-Place).
+ *  - التحقق من صلاحية المكان.
+ *  - طلب المعاملة الاقتصادية عبر EconomySystem.
  *  - الاحتفاظ بالدفاعات الموضوعة وتحديثها كل إطار.
- *
- * قرار مسجَّل بهذه المرحلة: الوضع يتم بالنقر (Tap) على مكان صالح على
- * الجزيرة أثناء "وضع البناء" — وليس سحب وإفلات (Drag & Drop) مباشر.
- * هذا متسق مع نظام الإدخال الحالي بالمشروع (TouchControls يوفّر Tap
- * كحدث منفصل عن Pan فقط، بلا موضع تمرير مستمر أثناء اللمس). نقل/سحب
- * دفاع موضوع بالفعل (قسم 54 بالمواصفات) مؤجَّل لمرحلة تحسين لاحقة.
  *
  * Phase 4:
  *  - DataContracts تتحقق من تعريف الدفاع قبل استخدامه.
  *  - DefenseManager هو حدود دخول تعريف الدفاع إلى نظام التشغيل.
+ *  - EconomySystem هو حدود التعامل مع العملة.
  *  - لا يملك تعريفات المحتوى الثابتة.
+ *
+ * ملاحظة:
+ * GameState ما زال يملك الرصيد فعليًا في هذه المرحلة،
+ * لكن DefenseManager لا يتعامل معه مباشرة.
  */
 
 const DefenseManager = {
@@ -30,7 +29,7 @@ const DefenseManager = {
 
   initialized: false,
 
-  // وضع البناء الحالي — يُقرأ من InteractionController عند كل نقرة.
+  // وضع البناء الحالي.
   isPlacing: false,
   _placingTypeId: null,
 
@@ -120,8 +119,7 @@ const DefenseManager = {
   },
 
   /**
-   * يحوّل نقرة الشاشة (عبر Raycaster جاهز من InteractionController) إلى
-   * نقطة أرضية (x, z) عند مستوى GROUND_Y. يُستخدم فقط أثناء وضع البناء.
+   * يحوّل نقرة الشاشة إلى نقطة أرضية (x, z).
    */
   getGroundIntersection(raycaster) {
     const point =
@@ -144,9 +142,7 @@ const DefenseManager = {
   },
 
   /**
-   * محاولة وضع الدفاع الحالي (_placingTypeId) عند (x, z).
-   * تفشل بأمان (رسالة توضيحية عبر Toast) إذا كان المكان غير صالح،
-   * أو يوجد دفاع قريب جدًا، أو الذهب غير كافٍ.
+   * محاولة وضع الدفاع الحالي عند (x, z).
    */
   attemptPlace(x, z) {
     if (
@@ -226,7 +222,17 @@ const DefenseManager = {
     }
 
     if (
-      !GameState.canAfford(
+      typeof EconomySystem === "undefined"
+    ) {
+      console.error(
+        "DefenseManager: EconomySystem is not available."
+      );
+
+      return;
+    }
+
+    if (
+      !EconomySystem.canAfford(
         T.cost
       )
     ) {
@@ -237,9 +243,17 @@ const DefenseManager = {
       return;
     }
 
-    GameState.spendCurrency(
-      T.cost
-    );
+    if (
+      !EconomySystem.spend(
+        T.cost
+      )
+    ) {
+      Toast.showMessage(
+        "تعذر إتمام عملية الدفع ⛔"
+      );
+
+      return;
+    }
 
     const defense =
       new Defense({
