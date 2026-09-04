@@ -8,15 +8,15 @@
  * - الاحتفاظ بالأعداء النشطين.
  * - تحديث حركتهم.
  * - اكتشاف وصولهم للقاعدة.
- * - التعامل مع دورة حياة العدو.
+ * - إدارة دورة حياة الأعداء.
  *
  * Waves ليست هنا.
  *
  * Phase 4:
  * - DataContracts تتحقق من بيانات العدو عند نقطة الإنشاء.
  * - لا يملك EnemyManager تعريفات المحتوى الثابتة.
- * - لا يدير Economy أو GameState مباشرة.
- * - نتائج وصول العدو أو موته تُرسل عبر EventBus.
+ * - لا يدير GameState مباشرة.
+ * - النتائج العابرة للأنظمة تُرسل عبر EventBus.
  */
 
 const EnemyManager = {
@@ -28,9 +28,10 @@ const EnemyManager = {
 
   initialized: false,
 
-  /**
-   * تهيئة النظام.
-   */
+  // =========================================================
+  // INIT
+  // =========================================================
+
   init(scene) {
     this.group =
       new THREE.Group();
@@ -49,15 +50,10 @@ const EnemyManager = {
     return this.group;
   },
 
-  /**
-   * إنشاء عدو جديد.
-   *
-   * هذه الدالة هي حدود دخول بيانات العدو
-   * إلى الحالة التشغيلية Enemy.
-   *
-   * DataContracts تتحقق من بيانات الـ spawn
-   * قبل إنشاء instance جديد.
-   */
+  // =========================================================
+  // SPAWN
+  // =========================================================
+
   spawnEnemy(data = {}) {
     if (!this.initialized) {
       return null;
@@ -153,12 +149,10 @@ const EnemyManager = {
     return enemy;
   },
 
-  /**
-   * عدو تجريبي واحد.
-   *
-   * يبقى متوافقًا مع النظام الحالي،
-   * لكنه لا يُستخدم من Game.js.
-   */
+  // =========================================================
+  // TEST SPAWN
+  // =========================================================
+
   spawnTestEnemy() {
     return this.spawnEnemy({
       name: "Basic Enemy",
@@ -172,9 +166,10 @@ const EnemyManager = {
     });
   },
 
-  /**
-   * تحديث جميع الأعداء.
-   */
+  // =========================================================
+  // UPDATE
+  // =========================================================
+
   update(delta) {
     if (!this.initialized) {
       return;
@@ -191,6 +186,23 @@ const EnemyManager = {
 
       enemy.update(delta);
 
+      /*
+       * بعض أسباب الموت، مثل Poison، تحدث داخل Enemy.update()
+       * مباشرة وليس عبر damageEnemy().
+       *
+       * لذلك يجب أن يلتقط EnemyManager هذه النتيجة هنا
+       * ويمررها عبر نفس مسار EnemyDied.
+       */
+      if (!enemy.alive) {
+        if (!enemy.reachedBase) {
+          this._handleEnemyDeath(
+            enemy
+          );
+        }
+
+        continue;
+      }
+
       if (
         enemy.hasReachedBase()
       ) {
@@ -203,12 +215,10 @@ const EnemyManager = {
     this._cleanupDeadEnemies();
   },
 
-  /**
-   * العدو وصل إلى القاعدة.
-   *
-   * EnemyManager لا يغير GameState مباشرة.
-   * بل يصدر نتيجة النظام عبر EventBus.
-   */
+  // =========================================================
+  // BASE REACHED
+  // =========================================================
+
   _handleBaseReached(enemy) {
     if (!enemy.alive) {
       return;
@@ -230,32 +240,31 @@ const EnemyManager = {
       "attack";
 
     if (
-      typeof EventBus !== "undefined"
+      typeof EventBus === "undefined"
     ) {
-      EventBus.emit(
-        "EnemyReachedBase",
-        {
-          enemyId: enemy.id,
-          type: enemy.type,
-          damage,
-        }
-      );
-    } else {
       console.error(
         "EnemyManager: EventBus is not available while handling base reached."
       );
+
+      return;
     }
 
+    EventBus.emit(
+      "EnemyReachedBase",
+      {
+        enemyId: enemy.id,
+        type: enemy.type,
+        damage,
+      }
+    );
+
     // لا توجد مكافأة عند وصول العدو.
-    // المكافأة تكون عند قتله فقط.
   },
 
-  /**
-   * إلحاق الضرر بعدو.
-   *
-   * CombatSystem يستخدم هذه الحدود بدلًا من
-   * الاتصال المباشر من Projectile.
-   */
+  // =========================================================
+  // DAMAGE
+  // =========================================================
+
   damageEnemy(
     enemy,
     amount
@@ -296,9 +305,10 @@ const EnemyManager = {
     return result;
   },
 
-  /**
-   * الحصول على الأعداء الأحياء.
-   */
+  // =========================================================
+  // QUERIES
+  // =========================================================
+
   getAliveEnemies() {
     return this.enemies.filter(
       (enemy) =>
@@ -307,9 +317,6 @@ const EnemyManager = {
     );
   },
 
-  /**
-   * الحصول على أقرب عدو إلى القاعدة.
-   */
   getClosestEnemyToBase() {
     const alive =
       this.getAliveEnemies();
@@ -335,12 +342,10 @@ const EnemyManager = {
     return closest;
   },
 
-  /**
-   * التعامل مع موت العدو.
-   *
-   * لا يمنح المكافأة مباشرة.
-   * بل يرسل النتيجة إلى Game/Event boundary.
-   */
+  // =========================================================
+  // DEATH
+  // =========================================================
+
   _handleEnemyDeath(enemy) {
     if (!enemy) {
       return;
@@ -352,29 +357,36 @@ const EnemyManager = {
         Number(enemy.reward) || 0
       );
 
+    /*
+     * die() آمنة إذا كان العدو ميتًا مسبقًا،
+     * وهذا يسمح أيضًا بالتعامل مع موت Poison.
+     */
     enemy.die();
 
     if (
-      typeof EventBus !== "undefined"
+      typeof EventBus === "undefined"
     ) {
-      EventBus.emit(
-        "EnemyDied",
-        {
-          enemyId: enemy.id,
-          type: enemy.type,
-          reward,
-        }
-      );
-    } else {
       console.error(
         "EnemyManager: EventBus is not available while handling enemy death."
       );
+
+      return;
     }
+
+    EventBus.emit(
+      "EnemyDied",
+      {
+        enemyId: enemy.id,
+        type: enemy.type,
+        reward,
+      }
+    );
   },
 
-  /**
-   * إزالة الأعداء الذين انتهوا.
-   */
+  // =========================================================
+  // CLEANUP
+  // =========================================================
+
   _cleanupDeadEnemies() {
     const remaining = [];
 
@@ -393,9 +405,10 @@ const EnemyManager = {
       remaining;
   },
 
-  /**
-   * تنظيف النظام بالكامل.
-   */
+  // =========================================================
+  // CLEAR
+  // =========================================================
+
   clear() {
     for (const enemy of this.enemies) {
       enemy.destroy();
