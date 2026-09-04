@@ -5,9 +5,8 @@
  * Critical.
  *
  * مقذوف واحد يتحرك (Homing بسيط: يعيد حساب اتجاهه نحو الموضع الحالي للهدف
- * كل إطار) من نقطة الإطلاق حتى يصطدم بهدفه، ثم يُلحق الضرر عبر
- * EnemyManager.damageEnemy — وهو ما يطبّق Armor تلقائيًا (مُنفَّذ أصلًا
- * بـEnemy.takeDamage منذ المرحلة 6).
+ * كل إطار) من نقطة الإطلاق حتى يصطدم بهدفه، ثم يمرر نتيجة الإصابة عبر
+ * CombatSystem — وهو حد القتال المسؤول عن تسليم الضرر إلى نظام الأعداء.
  *
  * إذا اختفى الهدف قبل الإصابة (مات بمقذوف آخر، أو وصل القاعدة)، يختفي
  * المقذوف بصمت بلا ضرر (Miss) — سلوك مقصود، ليس خطأ.
@@ -157,7 +156,7 @@ class Projectile {
   _hit() {
     this.alive = false;
 
-    EnemyManager.damageEnemy(
+    CombatSystem.resolveProjectileHit(
       this.targetEnemy,
       this.damage
     );
