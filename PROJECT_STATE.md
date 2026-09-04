@@ -3,7 +3,7 @@ Infinity Depths — Project State
 «Purpose: This file records the current implementation reality of the project.
 It is not the game design specification and it must not contain future features as if they already exist.»
 
-Last Updated: 2026-09-02
+Last Updated: 2026-09-04
 Project: Infinity Depths
 Repository: "khalilbrda-arch/Infinity_depths"
 Branch: "main"
@@ -154,16 +154,26 @@ Game State
 
 "src/core/GameState.js"
 
-Implemented responsibilities currently include core runtime state such as:
+Implemented responsibilities currently include:
 
+- Player level
+- Player XP
+- Player currency
+- Player rank
+- Unlocked areas
+- Unlocked defenses
+- Interaction state
 - Base HP
-- Economy-related values used by the current prototype
-- Defense affordability/spending
-- Basic gameplay state
+- Base maximum HP
+- Currency affordability
+- Currency spending
+- Enemy-kill reward handling
 
 Architectural Risk
 
-"GameState" may become a God Object as more systems are added.
+"GameState" currently contains state belonging to several domains.
+
+This is the primary current architecture risk and may become a God Object as the project grows.
 
 Current status:
 
@@ -171,15 +181,19 @@ Current status:
 
 Do not rewrite it blindly.
 
-The Architecture Foundation phase must determine which state belongs to:
+The Architecture Foundation phase must determine clear ownership boundaries between:
 
 - global/session state
 - economy
 - progression
-- combat
+- collection
 - world
+- level
+- combat
 - save data
 - UI state
+
+Existing functionality must be preserved while ownership is gradually separated where justified.
 
 ---
 
@@ -208,9 +222,9 @@ src/enemies/
 
 Current files:
 
-Enemy.js
-EnemyManager.js
-EnemyPath.js
+- Enemy.js
+- EnemyManager.js
+- EnemyPath.js
 
 Implemented:
 
@@ -218,15 +232,30 @@ Implemented:
 - Enemy movement
 - Enemy path following
 - Enemy management
-- Base damage interaction
-- Enemy health/damage flow
+- Enemy health
+- Enemy damage flow
+- Enemy death lifecycle
+- Base arrival
 - Status-effect structure for future expansion
 
-Current enemy visuals remain prototype-level.
+Ownership Finding
+
+"Enemy.js" owns enemy-instance state and lifecycle.
+
+"EnemyManager.js" owns the active enemy collection, spawning, updating, cleanup, and alive-enemy queries.
+
+However, EnemyManager currently performs external side effects:
+
+- Base damage through GameState
+- Enemy-kill rewards through GameState
+
+These responsibilities belong to other domains and are recorded as architecture debt.
 
 Current status:
 
-✅ CORE SYSTEM PRESENT
+🟡 CORE SYSTEM PRESENT / OWNERSHIP REFINEMENT REQUIRED
+
+No rewrite is authorized at this stage.
 
 ---
 
@@ -245,13 +274,23 @@ Implemented:
 - Wave progression
 - Enemy spawning
 - Wave state
-- Integration with enemy management
+- Spawn timing
+- Difficulty scaling
+- Wave completion flow
+- Integration with EnemyManager
+- Game-over detection
 
-Wave system was previously confirmed as a completed core gameplay system.
+Ownership Finding
+
+WaveManager owns wave state, scheduling, and spawn requests.
+
+It currently reads GameState to determine whether the base has been destroyed.
+
+This direct dependency is recorded as architecture debt for future architectural refinement.
 
 Current status:
 
-✅ CORE SYSTEM PRESENT
+🟡 CORE SYSTEM PRESENT / COUPLING REFINEMENT REQUIRED
 
 ---
 
@@ -263,8 +302,8 @@ src/defenses/
 
 Current files:
 
-Defense.js
-DefenseManager.js
+- Defense.js
+- DefenseManager.js
 
 UI:
 
@@ -291,9 +330,19 @@ Not implemented:
 
 That feature is intentionally deferred.
 
+Ownership Finding
+
+DefenseManager currently checks affordability and spends currency directly through GameState.
+
+This creates Defense → Economy coupling.
+
+The existing system remains functional and must not be rewritten during the ownership audit.
+
+The actual economy boundary will be established during Architecture Foundation.
+
 Current status:
 
-🟡 IMPLEMENTED — AWAITING FINAL MOBILE REGRESSION CONFIRMATION
+🟡 IMPLEMENTED — OWNERSHIP REFINEMENT REQUIRED
 
 ---
 
@@ -305,8 +354,8 @@ src/combat/
 
 Current files:
 
-Projectile.js
-ProjectileManager.js
+- Projectile.js
+- ProjectileManager.js
 
 Implemented:
 
@@ -317,11 +366,19 @@ Implemented:
 - Enemy damage flow
 - Status-effect structure
 
-Combat was integrated with the existing Defense and Enemy systems rather than rebuilding them.
+Ownership Finding
+
+Projectile currently resolves enemy damage through EnemyManager directly.
+
+This creates direct Combat → Enemy System coupling.
+
+A formal combat resolution boundary/event architecture is deferred to Architecture Foundation.
+
+The existing combat system must be preserved until the replacement boundary is designed and tested.
 
 Current status:
 
-🟡 IMPLEMENTED — AWAITING FINAL MOBILE REGRESSION CONFIRMATION
+🟡 IMPLEMENTED — OWNERSHIP REFINEMENT REQUIRED
 
 ---
 
@@ -393,6 +450,14 @@ Implemented:
 
 Current UI is functional but not final production UX.
 
+Ownership Rule
+
+UI does not own gameplay state.
+
+UI reads state and sends player intents/commands.
+
+Gameplay systems remain authoritative.
+
 Current status:
 
 🟡 FUNCTIONAL / PROTOTYPE UI
@@ -408,7 +473,7 @@ Current status:
 Currently:
 
 - Reloading the page loses runtime progress.
-- No versioned save schema exists in code.
+- No implemented versioned save system exists.
 - No migration system exists.
 - No backup/recovery system exists.
 - No offline persistence system exists.
@@ -419,14 +484,22 @@ Save architecture is planned during the Architecture Foundation phase.
 
 16. Economy
 
-Current prototype contains basic economy interaction required by existing defense placement.
+The current prototype contains a basic economy implementation used by existing gameplay.
 
-However, the full Economy system is not implemented.
+Implemented:
+
+- Player currency state
+- Currency affordability checks
+- Currency spending
+- Enemy-kill reward handling
+- Interaction reward handling
+
+However, the full Economy system is not implemented as an independent domain.
 
 Missing:
 
+- Dedicated Economy ownership boundary
 - Complete resource model
-- Resource ownership architecture
 - Economy events
 - Economy persistence
 - Economy balancing
@@ -435,30 +508,43 @@ Missing:
 - Full economy UI
 - Save integration
 
-Status:
+Current status:
 
-🔴 NOT COMPLETE
+🟡 PARTIAL — PROTOTYPE ECONOMY ONLY
 
 Important:
 
-Economy must not be expanded before the Architecture Foundation gate.
+Economy must not be expanded into a large independent feature set before Architecture Foundation.
 
 ---
 
 17. Progression
 
-Current status:
+Current prototype contains partial progression state.
 
-🔴 NOT IMPLEMENTED AS A COMPLETE SYSTEM
+Implemented in GameState:
+
+- Player level
+- Player XP
+- Player rank
+- Unlocked areas
+- Unlocked defenses
+
+However, a complete Progression system does not yet exist.
 
 Missing:
 
-- XP/progression model
-- Level progression
+- Formal XP/progression rules
+- Level progression system
 - Unlock contracts
+- Progression ownership boundary
 - Progression persistence
 - Progression UI
-- Map/level unlock system
+- Complete map/level unlock system
+
+Current status:
+
+🟡 PARTIAL — PROTOTYPE PROGRESSION STATE ONLY
 
 ---
 
@@ -609,6 +695,10 @@ Required later testing includes:
 - browser compatibility
 - long-session stability
 
+Verification Rule
+
+No mobile system may be marked fully verified without real-device testing.
+
 ---
 
 29. Android
@@ -643,27 +733,69 @@ Future testing must eventually include:
 
 31. Event Architecture
 
-Current project does not yet have a centralized event architecture.
+Current project does not yet have a centralized formal gameplay event architecture.
 
-Some systems communicate through direct calls.
+Several systems communicate through direct calls.
 
-Example risk:
+Confirmed examples:
 
 EnemyManager
-    ↓
+↓
 GameState
 
-Future architecture should support events such as:
+for:
 
-EnemyDeathEvent
-    ↓
-Reward System
-Economy
-Quest System
-Statistics
-UI
+- Base damage
+- Enemy-kill rewards
 
-This must be introduced carefully during the Architecture Foundation phase.
+DefenseManager
+↓
+GameState
+
+for:
+
+- Currency affordability
+- Currency spending
+
+Projectile
+↓
+EnemyManager
+
+for:
+
+- Enemy damage
+
+WaveManager
+↓
+GameState
+
+for:
+
+- Base-destruction state
+
+These relationships are functional but create coupling.
+
+Future architecture should introduce events or explicit service boundaries only where they meaningfully reduce coupling.
+
+Potential events include:
+
+- EnemySpawned
+- EnemyDamaged
+- EnemyReachedBase
+- EnemyDied
+- WaveStarted
+- EnemySpawnRequested
+- WaveCompleted
+- DefensePlaced
+- DefenseRemoved
+- DefenseUpgraded
+- CombatResolved
+
+Events must not be introduced indiscriminately.
+
+Current status:
+
+🔴 NOT IMPLEMENTED
 
 ---
 
@@ -673,14 +805,14 @@ The full data-contract architecture is not yet implemented.
 
 Planned contracts include:
 
-EnemyDefinition
-DefenseDefinition
-BossDefinition
-RewardDefinition
-UpgradeDefinition
-QuestDefinition
-MapDefinition
-MergeDefinition
+- EnemyDefinition
+- DefenseDefinition
+- BossDefinition
+- RewardDefinition
+- UpgradeDefinition
+- QuestDefinition
+- MapDefinition
+- MergeDefinition
 
 Existing configuration is partially data-driven, especially defense configuration.
 
@@ -693,11 +825,11 @@ Do not duplicate configuration systems.
 Planned architecture:
 
 Gameplay
-    ↓
+↓
 Visual ID
-    ↓
+↓
 Asset Registry
-    ↓
+↓
 Model / Texture / Animation / VFX
 
 This is not yet implemented as a complete production pipeline.
@@ -724,19 +856,19 @@ None
 35. Current Architecture Assessment
 
 Area| Status
-Core| 🟡 Partial
+Core| 🟡 Partial / Ownership refinement required
 Time| ✅ Working
 Camera| ✅ Working
 Touch Input| ✅ Working
 World| 🟡 Prototype
 Interaction| ✅ Present
-Enemies| ✅ Present
-Waves| ✅ Present
-Defenses| 🟡 Awaiting final mobile confirmation
-Combat| 🟡 Awaiting final mobile confirmation
+Enemies| 🟡 Present / Ownership refinement required
+Waves| 🟡 Present / Coupling refinement required
+Defenses| 🟡 Present / Economy coupling
+Combat| 🟡 Present / Combat coupling
 UI| 🟡 Functional prototype
-Economy| 🔴 Incomplete
-Progression| 🔴 Missing
+Economy| 🟡 Partial
+Progression| 🟡 Partial
 Merge| 🔴 Missing
 Collection| 🔴 Missing
 Bosses| 🔴 Missing
@@ -763,49 +895,59 @@ Current known structure:
 /
 ├── index.html
 ├── README.md
+├── AI_DEVELOPMENT_PROTOCOL.md
+├── ARCHITECTURE.md
+├── ARCHITECTURE_DEBT.md
+├── CHANGELOG.md
+├── CONTENT_PIPELINE.md
+├── DECISIONS.md
 ├── GAME_SPEC.md
 ├── PROJECT_STATE.md
+├── ROADMAP.md
+├── SAVE_SCHEMA.md
+├── TECHNICAL_RULES.md
+├── TESTING.md
 └── src/
-    ├── camera/
-    │   └── CameraController.js
-    ├── combat/
-    │   ├── Projectile.js
-    │   └── ProjectileManager.js
-    ├── core/
-    │   ├── Config.js
-    │   ├── Game.js
-    │   ├── GameState.js
-    │   └── Time.js
-    ├── defenses/
-    │   ├── Defense.js
-    │   └── DefenseManager.js
-    ├── enemies/
-    │   ├── Enemy.js
-    │   ├── EnemyManager.js
-    │   └── EnemyPath.js
-    ├── input/
-    │   └── TouchControls.js
-    ├── interaction/
-    │   └── InteractionController.js
-    ├── ui/
-    │   ├── BaseHUD.js
-    │   ├── DefenseUI.js
-    │   ├── GameOverUI.js
-    │   ├── Toast.js
-    │   └── WaveUI.js
-    ├── waves/
-    │   └── WaveManager.js
-    └── world/
-        ├── DefenseMap.js
-        ├── Interactables.js
-        ├── Island.js
-        └── Ocean.js
+├── camera/
+│   └── CameraController.js
+├── combat/
+│   ├── Projectile.js
+│   └── ProjectileManager.js
+├── core/
+│   ├── Config.js
+│   ├── Game.js
+│   ├── GameState.js
+│   └── Time.js
+├── defenses/
+│   ├── Defense.js
+│   └── DefenseManager.js
+├── enemies/
+│   ├── Enemy.js
+│   ├── EnemyManager.js
+│   └── EnemyPath.js
+├── input/
+│   └── TouchControls.js
+├── interaction/
+│   └── InteractionController.js
+├── ui/
+│   ├── BaseHUD.js
+│   ├── DefenseUI.js
+│   ├── GameOverUI.js
+│   ├── Toast.js
+│   └── WaveUI.js
+├── waves/
+│   └── WaveManager.js
+└── world/
+├── DefenseMap.js
+├── Interactables.js
+├── Island.js
+└── Ocean.js
 
 ---
 
 37. Important Existing Decisions
 
-These decisions must not be accidentally reversed:
+These decisions must not be accidentally reversed.
 
 Camera
 
@@ -873,49 +1015,61 @@ This must be verified rather than assumed after future code changes.
 
 39. Phase Position
 
-The project must follow the approved development sequence.
+The approved development sequence is:
 
-Current position:
-
-PHASE 0 AUDIT → COMPLETED
-
-Next:
-
+PHASE 0 — FULL REPOSITORY AUDIT
+↓
 PHASE 1 — PROJECT MEMORY
-
-After Phase 1:
-
+↓
 PHASE 2 — SOURCE OF TRUTH
+↓
+PHASE 3 — SYSTEM OWNERSHIP
+↓
+PHASE 4 — ARCHITECTURE FOUNDATION
+↓
+ARCHITECTURE GATE
+↓
+PHASE 5 — VERTICAL SLICE
+↓
+VERTICAL SLICE GATE
+↓
+PHASE 6 — ECONOMY
+↓
+FUTURE SYSTEM PHASES
 
-Then:
+Current Position
+
+PHASE 0 — COMPLETED
+
+PHASE 1 — COMPLETED
+
+PHASE 2 — AUDIT COMPLETED
+
+PHASE 3 — SYSTEM OWNERSHIP AUDIT COMPLETED
+
+Current State
 
 PHASE 3 — SYSTEM OWNERSHIP
 
-Then:
+STATUS:
+
+🟡 AUDIT COMPLETE — AWAITING PHASE 3 GATE
+
+The ownership audit identified existing direct dependencies that must be addressed architecturally in Phase 4.
+
+No broad refactor has been performed merely to make the architecture appear cleaner.
+
+Next Phase
 
 PHASE 4 — ARCHITECTURE FOUNDATION
 
-Then mandatory:
-
-ARCHITECTURE GATE
-
-Only after that:
-
-PHASE 5 — VERTICAL SLICE
-
-Then its gate.
-
-Only after those gates may:
-
-PHASE 6 — ECONOMY
-
-begin.
+Phase 4 may begin only after the Phase 3 gate is explicitly passed.
 
 ---
 
 40. Phase 0 Audit Result
 
-The repository has been inspected at the currently accessible source level.
+The repository was inspected at the currently accessible source level.
 
 Known facts:
 
@@ -927,6 +1081,8 @@ Known facts:
 - Defense system exists.
 - Combat/projectile system exists.
 - Basic UI exists.
+- Basic economy interaction exists.
+- Partial progression state exists.
 - Save system does not exist.
 - Automated testing does not exist.
 - Formal build tooling has not been identified.
@@ -936,83 +1092,173 @@ Known facts:
 - Production asset pipeline does not exist.
 - Performance baseline does not exist.
 
-No major duplicate system was identified during the initial audit.
+No major duplicate gameplay system was identified during the initial audit.
 
 The project is currently a functional prototype foundation, not yet a production-ready architecture.
 
 ---
 
-41. Current Gate
+41. Phase 3 System Ownership Audit
 
-Phase 0 Gate
+The following ownership findings have been confirmed by direct source inspection.
 
-STATUS: PASSED FOR DOCUMENTATION
+Enemy System
 
-Meaning:
+Enemy owns:
 
-We have enough knowledge of the current repository to begin documenting the project architecture and development memory.
+- Enemy instance state
+- HP
+- Movement
+- Status effects
+- Lifecycle
+- Death state
 
-This does not mean:
+EnemyManager owns:
 
-- the game is production-ready
-- all existing systems are fully tested
-- mobile compatibility is complete
-- architecture is finalized
-- future phases are approved automatically
+- Active enemy collection
+- Spawn
+- Update
+- Cleanup
+- Alive-enemy queries
 
----
+Current violation:
 
-42. Immediate Next Step
+EnemyManager directly performs:
 
-The next approved action is:
+- Base damage through GameState
+- Enemy-kill rewards through GameState
 
-Create/update the remaining Phase 1 project-memory documents one at a time.
-
-Order:
-
-1. "PROJECT_STATE.md" ← this file
-2. "GAME_SPEC.md"
-3. "ARCHITECTURE.md"
-4. "ROADMAP.md"
-5. "TECHNICAL_RULES.md"
-6. "DECISIONS.md"
-7. "CHANGELOG.md"
-8. "TESTING.md"
-9. "SAVE_SCHEMA.md"
-10. "CONTENT_PIPELINE.md"
-11. "AI_DEVELOPMENT_PROTOCOL.md"
-12. "ARCHITECTURE_DEBT.md"
-
-After the documentation gate is complete, implementation resumes only according to the approved development protocol.
+Resolution is deferred to Architecture Foundation.
 
 ---
 
-43. Golden Rule
+Wave System
 
-«Infinity Depths must grow by controlled integration, not uncontrolled accumulation.»
+WaveManager owns:
 
-Every new system must have:
+- Wave state
+- Countdown
+- Spawn scheduling
+- Difficulty scaling
+- Wave completion
 
-Scope
-↓
-Owner
-↓
-Data Contract
-↓
-Dependencies
-↓
-Implementation
-↓
-Tests
-↓
-Regression
-↓
-Performance
-↓
-Mobile Verification
-↓
-Documentation
-↓
-Gate
+Current coupling:
 
-No shortcut replaces this process.
+WaveManager reads GameState for base-destruction state.
+
+Resolution is deferred to Architecture Foundation.
+
+---
+
+Defense System
+
+DefenseManager owns:
+
+- Defense instances
+- Placement
+- Validation
+- Update
+- Cleanup
+
+Current coupling:
+
+DefenseManager directly accesses GameState for:
+
+- Affordability
+- Currency spending
+
+Resolution is deferred to Architecture Foundation.
+
+---
+
+Combat System
+
+ProjectileManager owns:
+
+- Projectile collection
+- Projectile spawning
+- Projectile updates
+- Projectile cleanup
+
+Projectile owns:
+
+- Projectile movement
+- Lifetime
+- Model
+
+Current coupling:
+
+Projectile directly calls EnemyManager for enemy damage.
+
+Resolution is deferred to Architecture Foundation.
+
+---
+
+UI
+
+BaseHUD reads base state for presentation.
+
+It does not own base damage or gameplay state.
+
+Current ownership is acceptable.
+
+---
+
+42. Phase 3 Gate
+
+Current Gate:
+
+PHASE 3 — SYSTEM OWNERSHIP
+
+Status:
+
+🟡 AUDIT COMPLETE — AWAITING GATE
+
+The audit has identified and documented the current ownership boundaries and direct coupling points.
+
+Phase 3 is not considered formally closed until the gate is explicitly passed.
+
+No Phase 4 implementation should begin automatically.
+
+---
+
+43. Immediate Next Step
+
+The immediate next action is:
+
+1. Verify this PROJECT_STATE.md is synchronized with the repository.
+2. Verify ARCHITECTURE_DEBT.md reflects the same Phase 3 ownership findings.
+3. Perform the Phase 3 Gate review.
+4. Explicitly pass or reject the Phase 3 Gate.
+5. Only after approval, begin Phase 4 planning.
+6. Phase 4 must begin with architecture design and contracts, not uncontrolled feature expansion.
+
+---
+
+44. Golden Rule
+
+Infinity Depths must grow as a real scalable game project.
+
+Therefore:
+
+Do not rush into features.
+
+Do not rewrite working systems without evidence.
+
+Do not allow GameState to become the permanent owner of every domain.
+
+Do not let UI own gameplay.
+
+Do not let one system silently own another system's responsibilities.
+
+Do not create architecture merely for appearance.
+
+Do not create files without a real responsibility.
+
+Do not claim completion without verification.
+
+Every major change must be:
+
+READ → INSPECT → UNDERSTAND → PLAN → IMPLEMENT → TEST → REGRESSION → DOCUMENT → REPORT → STOP
+
+And every phase must pass its gate before the next phase begins.
