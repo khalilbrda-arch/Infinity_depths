@@ -134,15 +134,29 @@ const Interactables = {
       return null;
     }
 
+    if (
+      typeof EconomySystem === "undefined"
+    ) {
+      console.error(
+        "Interactables: EconomySystem is not available."
+      );
+
+      return null;
+    }
+
     const registered =
       GameState.registerInteraction(
         entry.id,
-        entry.reward
+        0
       );
 
     if (!registered) {
       return null;
     }
+
+    EconomySystem.add(
+      entry.reward
+    );
 
     entry.collected = true;
 
