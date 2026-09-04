@@ -14,6 +14,11 @@
  * هذا متسق مع نظام الإدخال الحالي بالمشروع (TouchControls يوفّر Tap
  * كحدث منفصل عن Pan فقط، بلا موضع تمرير مستمر أثناء اللمس). نقل/سحب
  * دفاع موضوع بالفعل (قسم 54 بالمواصفات) مؤجَّل لمرحلة تحسين لاحقة.
+ *
+ * Phase 4:
+ *  - DataContracts تتحقق من تعريف الدفاع قبل استخدامه.
+ *  - DefenseManager هو حدود دخول تعريف الدفاع إلى نظام التشغيل.
+ *  - لا يملك تعريفات المحتوى الثابتة.
  */
 
 const DefenseManager = {
@@ -63,7 +68,35 @@ const DefenseManager = {
   // =========================================================
 
   startPlacement(typeId) {
-    if (!CONFIG.DEFENSES.TYPES[typeId]) {
+    if (
+      typeof DataContracts === "undefined"
+    ) {
+      console.error(
+        "DefenseManager: DataContracts is not available."
+      );
+
+      return;
+    }
+
+    const definition =
+      CONFIG.DEFENSES.TYPES[typeId];
+
+    if (
+      !definition
+    ) {
+      return;
+    }
+
+    if (
+      !DataContracts.validateDefenseDefinition(
+        definition
+      )
+    ) {
+      console.error(
+        "DefenseManager: invalid defense definition.",
+        definition
+      );
+
       return;
     }
 
@@ -72,7 +105,7 @@ const DefenseManager = {
 
     DefenseUI.setPlacingState(
       true,
-      CONFIG.DEFENSES.TYPES[typeId]
+      definition
     );
   },
 
@@ -104,7 +137,10 @@ const DefenseManager = {
       return null;
     }
 
-    return { x: point.x, z: point.z };
+    return {
+      x: point.x,
+      z: point.z,
+    };
   },
 
   /**
@@ -113,7 +149,10 @@ const DefenseManager = {
    * أو يوجد دفاع قريب جدًا، أو الذهب غير كافٍ.
    */
   attemptPlace(x, z) {
-    if (!this.isPlacing || !this._placingTypeId) {
+    if (
+      !this.isPlacing ||
+      !this._placingTypeId
+    ) {
       return;
     }
 
@@ -122,38 +161,101 @@ const DefenseManager = {
         this._placingTypeId
       ];
 
-    if (!DefenseMap.isPositionBuildable(x, z)) {
+    if (!T) {
+      console.error(
+        "DefenseManager: selected defense type does not exist.",
+        this._placingTypeId
+      );
+
+      this.cancelPlacement();
+
+      return;
+    }
+
+    if (
+      typeof DataContracts === "undefined"
+    ) {
+      console.error(
+        "DefenseManager: DataContracts is not available."
+      );
+
+      this.cancelPlacement();
+
+      return;
+    }
+
+    if (
+      !DataContracts.validateDefenseDefinition(
+        T
+      )
+    ) {
+      console.error(
+        "DefenseManager: invalid defense definition.",
+        T
+      );
+
+      this.cancelPlacement();
+
+      return;
+    }
+
+    if (
+      !DefenseMap.isPositionBuildable(
+        x,
+        z
+      )
+    ) {
       Toast.showMessage(
         "لا يمكن البناء هنا — قريب جدًا من مسار الأعداء ⛔"
       );
+
       return;
     }
 
-    if (this._isOverlapping(x, z)) {
+    if (
+      this._isOverlapping(
+        x,
+        z
+      )
+    ) {
       Toast.showMessage(
         "يوجد دفاع آخر بهذا المكان بالفعل ⛔"
       );
+
       return;
     }
 
-    if (!GameState.canAfford(T.cost)) {
+    if (
+      !GameState.canAfford(
+        T.cost
+      )
+    ) {
       Toast.showMessage(
         "الذهب غير كافٍ 🪙"
       );
+
       return;
     }
 
-    GameState.spendCurrency(T.cost);
+    GameState.spendCurrency(
+      T.cost
+    );
 
     const defense =
       new Defense({
-        id: `defense_${this.nextId++}`,
-        typeId: this._placingTypeId,
+        id:
+          `defense_${this.nextId++}`,
+
+        typeId:
+          this._placingTypeId,
+
         x,
         z,
       });
 
-    this.defenses.push(defense);
+    this.defenses.push(
+      defense
+    );
 
     this.group.add(
       defense.getObject()
