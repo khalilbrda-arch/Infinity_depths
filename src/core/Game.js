@@ -16,6 +16,7 @@
  *  - Input
  *  - Interaction
  *  - Base HUD
+ *  - Economy initialization
  *  - Enemy Manager
  *  - Wave Manager
  *  - Projectile Manager
@@ -67,6 +68,12 @@ const Game = {
     );
 
     BaseHUD.init();
+
+    if (
+      typeof EconomySystem !== "undefined"
+    ) {
+      EconomySystem.init();
+    }
 
     this._setupEventSubscriptions();
 
