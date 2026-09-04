@@ -20,28 +20,11 @@
  *  - Wave Manager
  *  - Projectile Manager
  *  - Defense Manager
+ *  - Event subscriptions بين الأنظمة
  *  - Game Loop
  *
  * لا يوجد Player.
  * الكاميرا ثابتة الزاوية وتُدار عبر CameraController.
- *
- * ترتيب الأنظمة:
- *
- * World
- *   ↓
- * Input
- *   ↓
- * Camera
- *   ↓
- * Interaction
- *   ↓
- * Enemies (يتجمّد عند Game Over)
- *   ↓
- * Waves (يدير الدورة الكاملة + يكتشف Game Over)
- *   ↓
- * UI
- *   ↓
- * Render
  */
 
 const Game = {
@@ -61,10 +44,6 @@ const Game = {
       return;
     }
 
-    // --------------------------------
-    // Engine
-    // --------------------------------
-
     this._setupScene();
     this._setupCamera();
     this._setupRenderer();
@@ -72,105 +51,86 @@ const Game = {
     this._setupSky();
     this._setupResize();
 
-    // --------------------------------
-    // World
-    // --------------------------------
-
     Ocean.create(this.scene);
     Island.create(this.scene);
     Interactables.create(this.scene);
     DefenseMap.create(this.scene);
 
-    // --------------------------------
-    // Input
-    // --------------------------------
-
     TouchControls.init();
-
-    // --------------------------------
-    // Camera
-    // --------------------------------
 
     CameraController.init(
       this.camera
     );
 
-    // --------------------------------
-    // Interaction
-    // --------------------------------
-
     InteractionController.init(
       this.camera
     );
 
-    // --------------------------------
-    // Base HUD
-    // --------------------------------
-
     BaseHUD.init();
 
-    // --------------------------------
-    // Enemy System
-    // --------------------------------
-    //
-    // المرحلة 6:
-    // EnemyPath
-    // Enemy
-    // EnemyManager
-    //
+    this._setupEventSubscriptions();
 
     EnemyManager.init(
       this.scene
     );
 
-    // --------------------------------
-    // Wave System
-    // --------------------------------
-    //
-    // المرحلة 7:
-    // WaveManager يتولى الآن جدولة ظهور الأعداء بالكامل
-    // (لم يعد هناك عدو تجريبي يدوي — spawnTestEnemy لم تعد تُستدعى هنا).
-    //
-
     WaveManager.init();
-
-    // --------------------------------
-    // Combat System (المقذوفات)
-    // --------------------------------
-    //
-    // المرحلة 9:
-    // يجب تهيئة ProjectileManager قبل DefenseManager لأن أول دفاع قد
-    // يُوضع ويطلق مقذوفًا بنفس الإطار نظريًا.
 
     ProjectileManager.init(
       this.scene
     );
 
-    // --------------------------------
-    // Defense System
-    // --------------------------------
-    //
-    // المرحلة 8:
-    // DefenseManager يتولى وضع الدفاعات وتحديثها (استهداف + إطلاق نار
-    // عبر ProjectileManager أعلاه).
-
     DefenseManager.init(
       this.scene
     );
 
-    // --------------------------------
-    // Game Time
-    // --------------------------------
-
     GameTime.init();
-
-    // --------------------------------
-    // Start
-    // --------------------------------
 
     this._hideBootScreen();
 
     this._loop();
+  },
+
+  // =========================================================
+  // EVENT BOUNDARY
+  // =========================================================
+
+  _setupEventSubscriptions() {
+    if (
+      typeof EventBus === "undefined"
+    ) {
+      console.error(
+        "Game: EventBus is not available."
+      );
+
+      return;
+    }
+
+    EventBus.on(
+      "EnemyReachedBase",
+      (payload) => {
+        if (!payload) {
+          return;
+        }
+
+        GameState.damageBase(
+          payload.damage
+        );
+      }
+    );
+
+    EventBus.on(
+      "EnemyDied",
+      (payload) => {
+        if (!payload) {
+          return;
+        }
+
+        GameState.rewardEnemyKill(
+          payload.reward
+        );
+      }
+    );
   },
 
   // =========================================================
@@ -204,11 +164,6 @@ const Game = {
         c.NEAR,
         c.FAR
       );
-
-    /*
-     * CameraController.init()
-     * سيضبط الموقع والزاوية الفعلية.
-     */
   },
 
   // =========================================================
@@ -476,10 +431,6 @@ const Game = {
       () => this._loop()
     );
 
-    // -----------------------------
-    // Time
-    // -----------------------------
-
     GameTime.tick();
 
     const delta =
@@ -488,21 +439,9 @@ const Game = {
     const elapsed =
       GameTime.elapsed;
 
-    // -----------------------------
-    // Camera
-    // -----------------------------
-
     CameraController.update();
 
-    // -----------------------------
-    // Input / Interaction
-    // -----------------------------
-
     InteractionController.update();
-
-    // -----------------------------
-    // World
-    // -----------------------------
 
     Ocean.update(
       elapsed
@@ -516,25 +455,10 @@ const Game = {
       elapsed
     );
 
-    // -----------------------------
-    // Enemies + Waves
-    // -----------------------------
-    //
-    // عند Game Over: تتجمّد حركة الأعداء (لا EnemyManager.update)
-    // بينما يبقى WaveManager.update يعمل فقط لاكتشاف حالة اللعبة
-    // المنتهية (لا يجدول أي شيء جديد بهذه الحالة).
-
     if (!WaveManager.isGameOver()) {
       EnemyManager.update(
         delta
       );
-
-      // -----------------------------
-      // Defenses + Combat (المرحلتان 8 و9)
-      // -----------------------------
-      //
-      // تتجمّد مثل الأعداء تمامًا عند Game Over — لا معنى لاستمرار
-      // الدفاعات بإطلاق النار أو المقذوفات بالحركة بعد تدمير القاعدة.
 
       DefenseManager.update(
         delta
@@ -549,17 +473,9 @@ const Game = {
       delta
     );
 
-    // -----------------------------
-    // UI
-    // -----------------------------
-
     BaseHUD.update();
 
     this._updateDebugHud();
-
-    // -----------------------------
-    // Render
-    // -----------------------------
 
     this.renderer.render(
       this.scene,
