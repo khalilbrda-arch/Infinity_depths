@@ -10,32 +10,25 @@
  * - لا تغيّر معادلة الضرر الحالية.
  * - لا تنقل حساب Armor أو Damage من Enemy.
  * - لا تغيّر منطق الموت أو المكافآت.
+ * - لا يملك هذا النظام حالة Scene أو دورة تحديث مستقلة.
  *
  * Enemy.takeDamage() ما زال يملك حاليًا حساب الضرر الفعلي وArmor.
  * وسيتم نقل قواعد القتال تدريجيًا بعد تثبيت الحدود واختبارات السلوك.
- *
- * ملاحظة:
- * CombatSystem لا يحتاج إلى دورة init مستقلة في هذه المرحلة؛
- * فهو Boundary/Resolver وليس نظامًا يحتاج إلى امتلاك موارد أو Scene.
  */
 
 const CombatSystem = {
   /**
    * حل إصابة مقذوف لهدف.
    *
-   * هذه الدالة تستبدل الاتصال المباشر السابق من:
-   *
-   * Projectile
-   *     ↓
-   * EnemyManager.damageEnemy()
-   *
-   * إلى:
+   * المسار المعماري:
    *
    * Projectile
    *     ↓
    * CombatSystem
    *     ↓
    * EnemyManager
+   *     ↓
+   * Enemy.takeDamage()
    *
    * السلوك الفعلي للضرر لا يتغير في هذه المرحلة.
    */
@@ -44,6 +37,19 @@ const CombatSystem = {
       !targetEnemy ||
       !targetEnemy.alive
     ) {
+      return null;
+    }
+
+    if (
+      typeof amount !== "number" ||
+      !Number.isFinite(amount) ||
+      amount < 0
+    ) {
+      console.error(
+        "CombatSystem: invalid projectile damage amount.",
+        amount
+      );
+
       return null;
     }
 
