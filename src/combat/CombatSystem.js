@@ -6,34 +6,54 @@
  * مسؤول عن تمرير نتائج الهجمات إلى نظام الأعداء دون أن تعرف المقذوفات
  * أو الدفاعات مدير الأعداء مباشرة.
  *
- * هذه خطوة تأسيسية محافظة: لا تغيّر معادلة الضرر الحالية.
+ * هذه خطوة تأسيسية محافظة:
+ * - لا تغيّر معادلة الضرر الحالية.
+ * - لا تنقل حساب Armor أو Damage من Enemy.
+ * - لا تغيّر منطق الموت أو المكافآت.
+ *
  * Enemy.takeDamage() ما زال يملك حاليًا حساب الضرر الفعلي وArmor.
- * سيتم نقل قواعد الحساب تدريجيًا بعد تثبيت حدود المسؤوليات واختبارات السلوك.
+ * وسيتم نقل قواعد القتال تدريجيًا بعد تثبيت الحدود واختبارات السلوك.
+ *
+ * ملاحظة:
+ * CombatSystem لا يحتاج إلى دورة init مستقلة في هذه المرحلة؛
+ * فهو Boundary/Resolver وليس نظامًا يحتاج إلى امتلاك موارد أو Scene.
  */
 
 const CombatSystem = {
-  initialized: false,
-
-  init() {
-    this.initialized = true;
-    return this;
-  },
-
   /**
    * حل إصابة مقذوف لهدف.
    *
-   * النتيجة نفسها التي كان Projectile يحصل عليها مباشرة من
-   * EnemyManager.damageEnemy().
+   * هذه الدالة تستبدل الاتصال المباشر السابق من:
+   *
+   * Projectile
+   *     ↓
+   * EnemyManager.damageEnemy()
+   *
+   * إلى:
+   *
+   * Projectile
+   *     ↓
+   * CombatSystem
+   *     ↓
+   * EnemyManager
+   *
+   * السلوك الفعلي للضرر لا يتغير في هذه المرحلة.
    */
   resolveProjectileHit(targetEnemy, amount) {
-    if (!this.initialized) {
-      return null;
-    }
-
     if (
       !targetEnemy ||
       !targetEnemy.alive
     ) {
+      return null;
+    }
+
+    if (
+      typeof EnemyManager === "undefined"
+    ) {
+      console.error(
+        "CombatSystem: EnemyManager is not available."
+      );
+
       return null;
     }
 
