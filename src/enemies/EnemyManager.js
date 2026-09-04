@@ -1,22 +1,22 @@
 /**
  * EnemyManager.js
  * ---------------
- * المرحلة 6 — Enemy Manager.
+ * المرحلة 4 — Architecture Foundation.
  *
  * مسؤول عن:
  * - إنشاء الأعداء.
  * - الاحتفاظ بالأعداء النشطين.
- * - تحديث حركتهم.
- * - اكتشاف وصولهم للقاعدة.
- * - التعامل مع دورة حياة العدو.
+ * - تحديث الأعداء.
+ * - اكتشاف وصول العدو إلى القاعدة.
+ * - إدارة دورة حياة العدو.
  *
- * Waves ليست هنا.
+ * لا يدير:
+ * - GameState.
+ * - Economy.
+ * - Waves.
+ * - UI.
  *
- * Phase 4:
- * - DataContracts تتحقق من بيانات العدو عند نقطة الإنشاء.
- * - لا يملك EnemyManager تعريفات المحتوى الثابتة.
- * - لا يدير Economy أو GameState مباشرة.
- * - نتائج وصول العدو أو موته تُرسل عبر EventBus.
+ * نتائج النظام المهمة تُرسل عبر EventBus.
  */
 
 const EnemyManager = {
@@ -32,6 +32,14 @@ const EnemyManager = {
    * تهيئة النظام.
    */
   init(scene) {
+    if (!scene) {
+      console.error(
+        "EnemyManager: scene is required."
+      );
+
+      return null;
+    }
+
     this.group =
       new THREE.Group();
 
@@ -52,11 +60,8 @@ const EnemyManager = {
   /**
    * إنشاء عدو جديد.
    *
-   * هذه الدالة هي حدود دخول بيانات العدو
-   * إلى الحالة التشغيلية Enemy.
-   *
-   * DataContracts تتحقق من بيانات الـ spawn
-   * قبل إنشاء instance جديد.
+   * DataContracts هي نقطة التحقق
+   * قبل إنشاء الحالة التشغيلية للعدو.
    */
   spawnEnemy(data = {}) {
     if (!this.initialized) {
@@ -121,12 +126,18 @@ const EnemyManager = {
     const enemy =
       new Enemy(enemyData);
 
-    this.enemies.push(
-      enemy
-    );
-
     const spawn =
       EnemyPath.getSpawnPoint();
+
+    if (!spawn) {
+      console.error(
+        "EnemyManager: spawn point is not available."
+      );
+
+      enemy.destroy();
+
+      return null;
+    }
 
     enemy.model.position.set(
       spawn.x,
@@ -134,30 +145,29 @@ const EnemyManager = {
       spawn.z
     );
 
+    this.enemies.push(
+      enemy
+    );
+
     this.group.add(
       enemy.getObject()
     );
 
-    if (
-      typeof EventBus !== "undefined"
-    ) {
-      EventBus.emit(
-        "EnemySpawned",
-        {
-          enemyId: enemy.id,
-          type: enemy.type,
-        }
-      );
-    }
+    this._emit(
+      "EnemySpawned",
+      {
+        enemyId: enemy.id,
+        type: enemy.type,
+      }
+    );
 
     return enemy;
   },
 
   /**
-   * عدو تجريبي واحد.
+   * إنشاء عدو تجريبي.
    *
-   * يبقى متوافقًا مع النظام الحالي،
-   * لكنه لا يُستخدم من Game.js.
+   * للاختبار فقط.
    */
   spawnTestEnemy() {
     return this.spawnEnemy({
@@ -192,28 +202,23 @@ const EnemyManager = {
       enemy.update(delta);
 
       /*
-       * Enemy.update() يستطيع قتل العدو بنفسه
-       * بسبب Status Effects مثل Poison.
+       * Enemy.update() قد يؤدي إلى موت العدو
+       * بسبب Status Effect مثل Poison.
        *
-       * لذلك لا يمكن الاعتماد فقط على damageEnemy().
-       *
-       * هنا نلتقط أي موت حدث داخل Enemy.update()
-       * ونمرره عبر نفس Event Boundary.
+       * لذلك يجب التقاط الموت هنا أيضًا،
+       * وليس فقط من damageEnemy().
        */
-      if (
-        !enemy.alive &&
-        !enemy.reachedBase
-      ) {
-        this._handleEnemyDeath(
-          enemy
-        );
+      if (!enemy.alive) {
+        if (!enemy.reachedBase) {
+          this._handleEnemyDeath(
+            enemy
+          );
+        }
 
         continue;
       }
 
-      if (
-        enemy.hasReachedBase()
-      ) {
+      if (enemy.hasReachedBase()) {
         this._handleBaseReached(
           enemy
         );
@@ -224,12 +229,13 @@ const EnemyManager = {
   },
 
   /**
-   * العدو وصل إلى القاعدة.
-   *
-   * EnemyManager لا يغير GameState مباشرة.
-   * بل يصدر نتيجة النظام عبر EventBus.
+   * معالجة وصول العدو إلى القاعدة.
    */
   _handleBaseReached(enemy) {
+    if (!enemy) {
+      return;
+    }
+
     if (!enemy.alive) {
       return;
     }
@@ -244,46 +250,49 @@ const EnemyManager = {
         Number(enemy.damage) || 0
       );
 
+    /*
+     * نوقف العدو قبل إرسال الحدث
+     * حتى لا تتم معالجته مرة أخرى.
+     */
     enemy.alive = false;
 
     enemy.animationState =
       "attack";
 
-    if (
-      typeof EventBus !== "undefined"
-    ) {
-      EventBus.emit(
-        "EnemyReachedBase",
-        {
-          enemyId: enemy.id,
-          type: enemy.type,
-          damage,
-        }
-      );
-    } else {
-      console.error(
-        "EnemyManager: EventBus is not available while handling base reached."
-      );
-    }
-
-    // لا توجد مكافأة عند وصول العدو.
-    // المكافأة تكون عند قتله فقط.
+    this._emit(
+      "EnemyReachedBase",
+      {
+        enemyId: enemy.id,
+        type: enemy.type,
+        damage,
+      }
+    );
   },
 
   /**
    * إلحاق الضرر بعدو.
    *
-   * CombatSystem يستخدم هذه الحدود بدلًا من
-   * الاتصال المباشر من Projectile.
+   * CombatSystem هو نقطة الدخول للضرر،
+   * وليس Projectile مباشرة.
    */
-  damageEnemy(
-    enemy,
-    amount
-  ) {
+  damageEnemy(enemy, amount) {
     if (
       !enemy ||
       !enemy.alive
     ) {
+      return null;
+    }
+
+    if (
+      typeof amount !== "number" ||
+      !Number.isFinite(amount) ||
+      amount < 0
+    ) {
+      console.error(
+        "EnemyManager: invalid damage amount.",
+        amount
+      );
+
       return null;
     }
 
@@ -292,32 +301,34 @@ const EnemyManager = {
         amount
       );
 
-    if (
-      result &&
-      result.killed
-    ) {
+    if (!result) {
+      return null;
+    }
+
+    if (result.killed) {
       this._handleEnemyDeath(
         enemy
       );
-    } else if (
-      typeof EventBus !== "undefined"
-    ) {
-      EventBus.emit(
-        "EnemyDamaged",
-        {
-          enemyId: enemy.id,
-          type: enemy.type,
-          amount,
-          result,
-        }
-      );
+
+      return result;
     }
+
+    this._emit(
+      "EnemyDamaged",
+      {
+        enemyId: enemy.id,
+        type: enemy.type,
+        amount,
+        result,
+      }
+    );
 
     return result;
   },
 
   /**
-   * الحصول على الأعداء الأحياء.
+   * الحصول على جميع الأعداء
+   * الذين ما زالوا صالحين للاستهداف.
    */
   getAliveEnemies() {
     return this.enemies.filter(
@@ -356,10 +367,10 @@ const EnemyManager = {
   },
 
   /**
-   * التعامل مع موت العدو.
+   * معالجة موت العدو.
    *
-   * لا يمنح المكافأة مباشرة.
-   * بل يرسل النتيجة إلى Game/Event boundary.
+   * لا يتم تعديل GameState هنا.
+   * يتم إرسال النتيجة عبر EventBus.
    */
   _handleEnemyDeath(enemy) {
     if (!enemy) {
@@ -370,38 +381,61 @@ const EnemyManager = {
       return;
     }
 
+    /*
+     * منع إرسال EnemyDied أكثر من مرة
+     * لنفس العدو.
+     */
+    if (
+      enemy._enemyManagerDeathHandled
+    ) {
+      return;
+    }
+
+    enemy._enemyManagerDeathHandled =
+      true;
+
     const reward =
       Math.max(
         0,
         Number(enemy.reward) || 0
       );
 
-    /*
-     * die() آمنة حتى لو كان العدو قد مات
-     * مسبقًا بسبب Status Effect.
-     */
     enemy.die();
 
-    if (
-      typeof EventBus !== "undefined"
-    ) {
-      EventBus.emit(
-        "EnemyDied",
-        {
-          enemyId: enemy.id,
-          type: enemy.type,
-          reward,
-        }
-      );
-    } else {
-      console.error(
-        "EnemyManager: EventBus is not available while handling enemy death."
-      );
-    }
+    this._emit(
+      "EnemyDied",
+      {
+        enemyId: enemy.id,
+        type: enemy.type,
+        reward,
+      }
+    );
   },
 
   /**
-   * إزالة الأعداء الذين انتهوا.
+   * إرسال حدث بأمان.
+   */
+  _emit(eventName, payload) {
+    if (
+      typeof EventBus === "undefined"
+    ) {
+      console.error(
+        `EnemyManager: EventBus is not available for "${eventName}".`
+      );
+
+      return false;
+    }
+
+    EventBus.emit(
+      eventName,
+      payload
+    );
+
+    return true;
+  },
+
+  /**
+   * إزالة الأعداء المنتهية دورة حياتهم.
    */
   _cleanupDeadEnemies() {
     const remaining = [];
@@ -411,6 +445,7 @@ const EnemyManager = {
         remaining.push(
           enemy
         );
+
         continue;
       }
 
