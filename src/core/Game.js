@@ -126,7 +126,17 @@ const Game = {
           return;
         }
 
-        GameState.rewardEnemyKill(
+        if (
+          typeof EconomySystem === "undefined"
+        ) {
+          console.error(
+            "Game: EconomySystem is not available."
+          );
+
+          return;
+        }
+
+        EconomySystem.rewardEnemyKill(
           payload.reward
         );
       }
