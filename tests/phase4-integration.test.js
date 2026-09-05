@@ -4,7 +4,7 @@
  *
  * الهدف:
  * - اختبار تكامل EventBus مع Game.
- * - اختبار EnemyDied -> EconomySystem.
+ * - اختبار EnemyDied -> EconomySystem -> GameState.
  * - اختبار EnemyReachedBase -> GameState.
  * - اختبار CombatSystem -> EnemyManager.
  *
@@ -150,7 +150,9 @@ test(
     context.GameState.player.currency =
       0;
 
-    context.EconomySystem.init();
+    context.EconomySystem.init(
+      context.GameState.player.currency
+    );
 
     context.Game._setupEventSubscriptions();
 
@@ -167,6 +169,11 @@ test(
       context.GameState.player.currency,
       25
     );
+
+    assert.equal(
+      context.EconomySystem.getBalance(),
+      25
+    );
   }
 );
 
@@ -179,7 +186,9 @@ test(
     context.GameState.player.currency =
       50;
 
-    context.EconomySystem.init();
+    context.EconomySystem.init(
+      context.GameState.player.currency
+    );
 
     context.Game._setupEventSubscriptions();
 
@@ -196,6 +205,11 @@ test(
       context.GameState.player.currency,
       65
     );
+
+    assert.equal(
+      context.EconomySystem.getBalance(),
+      65
+    );
   }
 );
 
@@ -208,6 +222,10 @@ test(
   () => {
     const context =
       loadCoreIntegrationContext();
+
+    context.EconomySystem.init(
+      context.GameState.player.currency
+    );
 
     context.Game._setupEventSubscriptions();
 
@@ -232,6 +250,10 @@ test(
   () => {
     const context =
       loadCoreIntegrationContext();
+
+    context.EconomySystem.init(
+      context.GameState.player.currency
+    );
 
     context.Game._setupEventSubscriptions();
 
@@ -377,6 +399,10 @@ test(
     context.GameState.player.currency =
       0;
 
+    context.EconomySystem.init(
+      context.GameState.player.currency
+    );
+
     context.Game._setupEventSubscriptions();
 
     context.EventBus.emit(
@@ -409,6 +435,10 @@ test(
     context.GameState.player.currency =
       50;
 
+    context.EconomySystem.init(
+      context.GameState.player.currency
+    );
+
     context.Game._setupEventSubscriptions();
 
     context.EventBus.emit(
@@ -427,6 +457,11 @@ test(
 
     assert.equal(
       context.GameState.player.currency,
+      50
+    );
+
+    assert.equal(
+      context.EconomySystem.getBalance(),
       50
     );
   }
