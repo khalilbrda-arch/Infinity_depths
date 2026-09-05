@@ -43,3 +43,20 @@ jobs:
       - name: Run Integration Tests
         run: |
           node --test tests/phase4-integration.test.js
+
+  phase4-regression:
+    name: Phase 4 Regression Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Run Regression Tests
+        run: |
+          node --test tests/phase4-regression.test.js
