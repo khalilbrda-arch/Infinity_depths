@@ -82,6 +82,16 @@ function createContext(
     Array,
     JSON,
 
+    /*
+     * Game.js يعمل في بيئة المتصفح ويستخدم window.
+     * الاختبارات تعمل داخل Node.js، لذلك نوفر
+     * الحد الأدنى المطلوب من واجهة window.
+     */
+    window: {
+      addEventListener() {},
+      removeEventListener() {},
+    },
+
     ...overrides,
   });
 }
