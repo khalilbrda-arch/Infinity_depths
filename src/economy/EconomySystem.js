@@ -4,135 +4,117 @@
  * المرحلة 4 — Architecture Foundation / Economy Boundary.
  *
  * مسؤول عن:
+ * - امتلاك الرصيد أثناء تشغيل اللعبة.
  * - التحقق من القدرة على الدفع.
  * - تنفيذ معاملات العملة.
  * - إضافة مكافآت العملة.
  *
- * لا يملك:
- * - واجهة المستخدم.
- * - الدفاعات.
- * - الأعداء.
- * - تعريفات المحتوى.
+ * لا يعتمد مباشرة على GameState.
  *
- * ملاحظة:
- * GameState ما زال يخزن الرصيد فعليًا في هذه المرحلة.
- * هذا النظام يمثل حدود الاقتصاد، وسيتم نقل الملكية إليه
- * تدريجيًا بعد تثبيت السلوك والاختبارات.
+ * الحدود:
+ *
+ * Game
+ *   ↓
+ * EconomySystem.init(initialBalance)
+ *
+ * EconomySystem
+ *   ↓
+ * EventBus
+ *   ↓
+ * Game
+ *
+ * عند تغير الرصيد يتم إصدار:
+ * CurrencyChanged
  */
 
 const EconomySystem = {
   initialized: false,
 
-  init() {
+  balance: 0,
+
+  init(initialBalance = 0) {
+    this.balance = Math.max(
+      0,
+      Number(initialBalance) || 0
+    );
+
     this.initialized = true;
+
+    this._emitCurrencyChanged();
+
+    return this.balance;
   },
 
   canAfford(amount) {
-    if (
-      typeof GameState === "undefined"
-    ) {
-      console.error(
-        "EconomySystem: GameState is not available."
-      );
-
-      return false;
-    }
-
-    const cost =
-      Math.max(
-        0,
-        Number(amount) || 0
-      );
-
-    return GameState.canAfford(
-      cost
+    const cost = Math.max(
+      0,
+      Number(amount) || 0
     );
+
+    return this.balance >= cost;
   },
 
   spend(amount) {
-    if (
-      typeof GameState === "undefined"
-    ) {
-      console.error(
-        "EconomySystem: GameState is not available."
-      );
-
-      return false;
-    }
-
-    const cost =
-      Math.max(
-        0,
-        Number(amount) || 0
-      );
-
-    if (
-      !this.canAfford(cost)
-    ) {
-      return false;
-    }
-
-    return GameState.spendCurrency(
-      cost
+    const cost = Math.max(
+      0,
+      Number(amount) || 0
     );
+
+    if (!this.canAfford(cost)) {
+      return false;
+    }
+
+    this.balance -= cost;
+
+    this._emitCurrencyChanged();
+
+    return true;
   },
 
   add(amount) {
-    if (
-      typeof GameState === "undefined"
-    ) {
-      console.error(
-        "EconomySystem: GameState is not available."
-      );
+    const value = Math.max(
+      0,
+      Number(amount) || 0
+    );
 
-      return null;
-    }
+    this.balance += value;
 
-    const value =
-      Math.max(
-        0,
-        Number(amount) || 0
-      );
-
-    GameState.player.currency +=
-      value;
+    this._emitCurrencyChanged();
 
     return {
       amount: value,
-
-      total:
-        GameState.player.currency,
+      total: this.balance,
     };
   },
 
   rewardEnemyKill(reward) {
-    if (
-      typeof GameState === "undefined"
-    ) {
-      console.error(
-        "EconomySystem: GameState is not available."
-      );
-
-      return null;
-    }
-
-    return GameState.rewardEnemyKill(
-      reward
+    const value = Math.max(
+      0,
+      Number(reward) || 0
     );
+
+    return this.add(value);
   },
 
   getBalance() {
-    if (
-      typeof GameState === "undefined"
-    ) {
-      return 0;
-    }
-
     return Math.max(
       0,
-      Number(
-        GameState.player.currency
-      ) || 0
+      Number(this.balance) || 0
+    );
+  },
+
+  _emitCurrencyChanged() {
+    if (
+      typeof EventBus === "undefined"
+    ) {
+      return;
+    }
+
+    EventBus.emit(
+      "CurrencyChanged",
+      {
+        balance: this.balance,
+      }
     );
   },
 };
