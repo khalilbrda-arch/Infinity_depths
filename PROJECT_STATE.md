@@ -1,20 +1,32 @@
-Infinity Depths — Project State
+# Infinity Depths — Project State
 
-«Purpose: This file records the current implementation reality of the project.
-It is not the game design specification and it must not contain future features as if they already exist.»
+> Purpose:
+> This file records the current implementation reality of the project.
+> It is not the game design specification and must not describe future features
+> as if they already exist.
 
-Last Updated: 2026-09-04
+Last Updated: 2026-09-05
+
 Project: Infinity Depths
-Repository: "khalilbrda-arch/Infinity_depths"
-Branch: "main"
+Repository: khalilbrda-arch/Infinity_depths
+Branch: main
 
 ---
 
-1. Current Development Protocol
+# 1. Current Development Protocol
 
 Every development cycle follows this exact order:
 
-READ → INSPECT → UNDERSTAND → PLAN → IMPLEMENT → TEST → REGRESSION → DOCUMENT → REPORT → STOP
+READ
+→ INSPECT
+→ UNDERSTAND
+→ PLAN
+→ IMPLEMENT
+→ TEST
+→ REGRESSION
+→ DOCUMENT
+→ REPORT
+→ STOP
 
 Rules:
 
@@ -28,873 +40,278 @@ Rules:
 - Never expand scope during implementation.
 - Every phase has a gate.
 - A gate must be passed before the next phase begins.
+- Existing working systems must be preserved unless a justified architectural change is required.
+- All important architectural changes must be reflected in project documentation.
+- Automated tests are part of the development process.
+- Mobile verification must eventually include real-device testing.
 
 ---
 
-2. Project Type
+# 2. Current Project Phase
 
-Infinity Depths is a:
+Current Phase:
 
-- 3D
-- Mobile-first
-- Strategy / Tower Defense / Base Building / Combat
-- Offline PvE first
-- Future Online PvP / Co-op
-- Long-term scalable game project
+Phase 5 — Vertical Slice
 
-The project is currently a browser-based Three.js prototype/application.
+Current Gate:
 
----
+Architecture Gate — PASSED
 
-3. Current Technology
+Phase 5 Status:
 
-Rendering
+NOT YET COMPLETED
 
-- Three.js
-- Current loaded version: "r128"
-- Loaded through CDN from "index.html"
+Next Required Gate:
 
-Application Structure
-
-The current project uses manually loaded JavaScript files through "index.html".
-
-Current source areas:
-
-src/
-├── camera/
-├── combat/
-├── core/
-├── defenses/
-├── enemies/
-├── input/
-├── interaction/
-├── ui/
-├── waves/
-└── world/
-
-Current Build / Tooling State
-
-No formal package/build/test infrastructure has been identified yet.
-
-Currently there is no confirmed:
-
-- "package.json"
-- npm/Vite/Webpack pipeline
-- TypeScript pipeline
-- automated test runner
-- Android Studio project
-- Gradle Android project
-
-This is an architectural risk for later scaling and must be handled deliberately rather than prematurely.
-
----
-
-4. Current Game Design Reality
-
-Camera
-
-Implemented:
-
-- Fixed-angle top-down camera
-- Approximately 58° angle
-- Pan
-- Zoom
-- Camera bounds
-- Mobile touch controls
-
-Not implemented:
-
-- Player-controlled character body
-- First-person camera
-- Third-person camera
-- WASD movement
-- Joysticks
-
-The player interacts with the world directly through the camera.
-
----
-
-5. World
-
-Implemented:
-
-- 3D world
-- Island/base environment
-- Ocean
-- Basic environmental objects
-- Visible resources/interactables
-
-Current world rendering is still prototype-level.
-
-Visual assets currently rely heavily on Three.js primitive geometry.
-
-Not implemented:
-
-- Final production asset pipeline
-- Advanced environment system
-- Weather
-- Day/night
-- Advanced world simulation
-- Exploration
-- Fog of War
-
-Important Design Rule
-
-There is no exploration/fog-of-war system in the intended core design.
-
-The visible map is available to the player.
-
-Progression unlocks additional maps/levels rather than hiding the current map behind exploration.
-
----
-
-6. Core
-
-Game State
-
-"src/core/GameState.js"
-
-Implemented responsibilities currently include:
-
-- Player level
-- Player XP
-- Player currency
-- Player rank
-- Unlocked areas
-- Unlocked defenses
-- Interaction state
-- Base HP
-- Base maximum HP
-- Currency affordability
-- Currency spending
-- Enemy-kill reward handling
-
-Architectural Risk
-
-"GameState" currently contains state belonging to several domains.
-
-This is the primary current architecture risk and may become a God Object as the project grows.
-
-Current status:
-
-🟡 PARTIAL / MEDIUM RISK
-
-Do not rewrite it blindly.
-
-The Architecture Foundation phase must determine clear ownership boundaries between:
-
-- global/session state
-- economy
-- progression
-- collection
-- world
-- level
-- combat
-- save data
-- UI state
-
-Existing functionality must be preserved while ownership is gradually separated where justified.
-
----
-
-7. Time
-
-"src/core/Time.js"
-
-Implemented:
-
-- Central game clock
-- Delta time
-- Elapsed time
-- Three.js clock integration
-
-Current status:
-
-✅ WORKING
-
----
-
-8. Enemies
-
-Directory:
-
-src/enemies/
-
-Current files:
-
-- Enemy.js
-- EnemyManager.js
-- EnemyPath.js
-
-Implemented:
-
-- Enemy entities
-- Enemy movement
-- Enemy path following
-- Enemy management
-- Enemy health
-- Enemy damage flow
-- Enemy death lifecycle
-- Base arrival
-- Status-effect structure for future expansion
-
-Ownership Finding
-
-"Enemy.js" owns enemy-instance state and lifecycle.
-
-"EnemyManager.js" owns the active enemy collection, spawning, updating, cleanup, and alive-enemy queries.
-
-However, EnemyManager currently performs external side effects:
-
-- Base damage through GameState
-- Enemy-kill rewards through GameState
-
-These responsibilities belong to other domains and are recorded as architecture debt.
-
-Current status:
-
-🟡 CORE SYSTEM PRESENT / OWNERSHIP REFINEMENT REQUIRED
-
-No rewrite is authorized at this stage.
-
----
-
-9. Waves
-
-Directory:
-
-src/waves/
-
-Current file:
-
-WaveManager.js
-
-Implemented:
-
-- Wave progression
-- Enemy spawning
-- Wave state
-- Spawn timing
-- Difficulty scaling
-- Wave completion flow
-- Integration with EnemyManager
-- Game-over detection
-
-Ownership Finding
-
-WaveManager owns wave state, scheduling, and spawn requests.
-
-It currently reads GameState to determine whether the base has been destroyed.
-
-This direct dependency is recorded as architecture debt for future architectural refinement.
-
-Current status:
-
-🟡 CORE SYSTEM PRESENT / COUPLING REFINEMENT REQUIRED
-
----
-
-10. Defenses
-
-Directory:
-
-src/defenses/
-
-Current files:
-
-- Defense.js
-- DefenseManager.js
-
-UI:
-
-src/ui/DefenseUI.js
-
-Implemented:
-
-- Defense entities
-- Defense management
-- Defense configuration
-- Defense placement
-- Defense affordability check
-- Economy spending through current GameState integration
-- Tap-to-place interaction
-- Free defense placement
-
-Current design:
-
-Free placement, not fixed slots.
-
-Not implemented:
-
-- Drag/move already placed defenses
-
-That feature is intentionally deferred.
-
-Ownership Finding
-
-DefenseManager currently checks affordability and spends currency directly through GameState.
-
-This creates Defense → Economy coupling.
-
-The existing system remains functional and must not be rewritten during the ownership audit.
-
-The actual economy boundary will be established during Architecture Foundation.
-
-Current status:
-
-🟡 IMPLEMENTED — OWNERSHIP REFINEMENT REQUIRED
-
----
-
-11. Combat
-
-Directory:
-
-src/combat/
-
-Current files:
-
-- Projectile.js
-- ProjectileManager.js
-
-Implemented:
-
-- Projectile entities
-- Projectile management
-- Defense → projectile → enemy interaction
-- Combat configuration
-- Enemy damage flow
-- Status-effect structure
-
-Ownership Finding
-
-Projectile currently resolves enemy damage through EnemyManager directly.
-
-This creates direct Combat → Enemy System coupling.
-
-A formal combat resolution boundary/event architecture is deferred to Architecture Foundation.
-
-The existing combat system must be preserved until the replacement boundary is designed and tested.
-
-Current status:
-
-🟡 IMPLEMENTED — OWNERSHIP REFINEMENT REQUIRED
-
----
-
-12. Interaction
-
-Directory:
-
-src/interaction/
-
-Current file:
-
-InteractionController.js
-
-Implemented:
-
-- Tap interaction
-- World interaction
-- Defense placement branch
-- Interaction with visible world objects
-
-Current status:
-
-✅ CORE SYSTEM PRESENT
-
----
-
-13. Input
-
-Directory:
-
-src/input/
-
-Current file:
-
-TouchControls.js
-
-Implemented:
-
-- Touch input
-- Pan
-- Zoom
-- Mobile-oriented camera interaction
-
-Current status:
-
-✅ CORE SYSTEM PRESENT
-
----
-
-14. UI
-
-Current UI systems:
-
-src/ui/
-├── BaseHUD.js
-├── DefenseUI.js
-├── GameOverUI.js
-├── Toast.js
-└── WaveUI.js
-
-Implemented:
-
-- Base HP display
-- Wave information
-- Defense placement UI
-- Toast notifications
-- Game-over state
-- Defense placement disabling after game over
-
-Current UI is functional but not final production UX.
-
-Ownership Rule
-
-UI does not own gameplay state.
-
-UI reads state and sends player intents/commands.
-
-Gameplay systems remain authoritative.
-
-Current status:
-
-🟡 FUNCTIONAL / PROTOTYPE UI
-
----
-
-15. Save System
-
-Current status:
-
-🔴 NOT IMPLEMENTED
-
-Currently:
-
-- Reloading the page loses runtime progress.
-- No implemented versioned save system exists.
-- No migration system exists.
-- No backup/recovery system exists.
-- No offline persistence system exists.
-
-Save architecture is planned during the Architecture Foundation phase.
-
----
-
-16. Economy
-
-The current prototype contains a basic economy implementation used by existing gameplay.
-
-Implemented:
-
-- Player currency state
-- Currency affordability checks
-- Currency spending
-- Enemy-kill reward handling
-- Interaction reward handling
-
-However, the full Economy system is not implemented as an independent domain.
-
-Missing:
-
-- Dedicated Economy ownership boundary
-- Complete resource model
-- Economy events
-- Economy persistence
-- Economy balancing
-- Production/generation systems
-- Upgrade costs
-- Full economy UI
-- Save integration
-
-Current status:
-
-🟡 PARTIAL — PROTOTYPE ECONOMY ONLY
+Vertical Slice Gate
 
 Important:
 
-Economy must not be expanded into a large independent feature set before Architecture Foundation.
+Phase 5 must prove the representative end-to-end gameplay loop.
+
+Do not begin large Economy, Progression, Collection, Merge, Boss,
+Quest, Online, or other future expansion work before the Vertical Slice
+has been implemented and its gate has passed.
 
 ---
 
-17. Progression
+# 3. Phase History
 
-Current prototype contains partial progression state.
+Phase 0 — Full Repository Audit
 
-Implemented in GameState:
+Status: PASSED
 
-- Player level
-- Player XP
-- Player rank
-- Unlocked areas
-- Unlocked defenses
+Result:
 
-However, a complete Progression system does not yet exist.
-
-Missing:
-
-- Formal XP/progression rules
-- Level progression system
-- Unlock contracts
-- Progression ownership boundary
-- Progression persistence
-- Progression UI
-- Complete map/level unlock system
-
-Current status:
-
-🟡 PARTIAL — PROTOTYPE PROGRESSION STATE ONLY
+- Repository inspected.
+- Existing systems identified.
+- Current implementation reality documented.
+- Existing architecture risks identified.
+- Existing gameplay preserved.
 
 ---
 
-18. Merge System
+Phase 1 — Project Memory
 
-Current status:
+Status: PASSED
 
-🔴 NOT IMPLEMENTED
+Result:
 
-Planned architecture requires:
+Project documentation structure established.
 
-- Merge definitions
-- Validation
-- Input/output contracts
-- Cost handling
-- Result generation
-- Collection integration
-- Progression integration
-- Save integration
+Primary project documentation includes:
 
----
-
-19. Collection / Inventory
-
-Current status:
-
-🔴 NOT IMPLEMENTED
-
-The final system must eventually support scalable content without rewriting core systems.
+- PROJECT_STATE.md
+- GAME_SPEC.md
+- ARCHITECTURE.md
+- ARCHITECTURE_DEBT.md
+- ROADMAP.md
+- TECHNICAL_RULES.md
+- DECISIONS.md
+- CHANGELOG.md
+- TESTING.md
+- SAVE_SCHEMA.md
+- CONTENT_PIPELINE.md
+- AI_DEVELOPMENT_PROTOCOL.md
 
 ---
 
-20. Boss System
+Phase 2 — Source of Truth
 
-Current status:
+Status: PASSED
 
-🔴 NOT IMPLEMENTED
+Current documentation hierarchy:
 
-Planned future system.
-
-No boss implementation should be introduced before the relevant architecture gates.
-
----
-
-21. Weather / Day & Night
-
-Current status:
-
-🔴 NOT IMPLEMENTED
-
-Future world systems.
-
----
-
-22. Quests
-
-Current status:
-
-🔴 NOT IMPLEMENTED
-
-Future system.
-
----
-
-23. Advanced World Systems
-
-Current status:
-
-🔴 NOT IMPLEMENTED
-
-Includes future systems such as:
-
-- Advanced world simulation
-- Events
-- NPC systems
-- Story systems
-- Environmental systems
-
-These must be added through the Content Pipeline rather than ad-hoc code expansion.
-
----
-
-24. Audio
-
-Current status:
-
-🔴 NOT IMPLEMENTED AS A PRODUCTION SYSTEM
-
----
-
-25. VFX
-
-Current status:
-
-🔴 NOT IMPLEMENTED AS A PRODUCTION SYSTEM
-
----
-
-26. Visual Production
-
-Current visual implementation is prototype-level.
-
-Current assets are primarily:
-
-- Three.js primitives
-- Prototype materials
-- Placeholder-style enemy/world visuals
-
-Final production asset pipeline is not yet implemented.
-
----
-
-27. Performance
-
-No formal performance baseline currently exists.
-
-Missing measured baselines for:
-
-- FPS
-- CPU
-- GPU
-- memory
-- entity count
-- draw calls
-- loading time
-- mobile thermal/performance behavior
-
-Performance work must become systematic during the Architecture Foundation and later Performance phases.
-
----
-
-28. Mobile
-
-The project is designed Mobile-First.
-
-Existing systems were designed around touch interaction.
-
-However, final device compatibility has not yet been completed.
-
-Required later testing includes:
-
-- touch reliability
-- different screen sizes
-- different aspect ratios
-- performance
-- memory
-- orientation
-- browser compatibility
-- long-session stability
-
-Verification Rule
-
-No mobile system may be marked fully verified without real-device testing.
-
----
-
-29. Android
-
-No native Android project is currently present in the repository.
-
-Do not introduce Android packaging prematurely.
-
-The game architecture must first become stable.
-
----
-
-30. Automated Testing
-
-Current status:
-
-🔴 NOT IMPLEMENTED
-
-No formal automated test infrastructure has been identified.
-
-Future testing must eventually include:
-
-1. Static checks
-2. Unit tests
-3. Integration tests
-4. Gameplay tests
-5. Regression tests
-6. Mobile tests
-7. Performance tests
-
----
-
-31. Event Architecture
-
-Current project does not yet have a centralized formal gameplay event architecture.
-
-Several systems communicate through direct calls.
-
-Confirmed examples:
-
-EnemyManager
+GAME_SPEC
 ↓
-GameState
+Design Truth
 
-for:
-
-- Base damage
-- Enemy-kill rewards
-
-DefenseManager
+PROJECT_STATE
 ↓
-GameState
+Current Implementation Reality
 
-for:
-
-- Currency affordability
-- Currency spending
-
-Projectile
+ARCHITECTURE
 ↓
-EnemyManager
+Technical Structure
 
-for:
-
-- Enemy damage
-
-WaveManager
+DECISIONS
 ↓
-GameState
+Decision Rationale
 
-for:
+ROADMAP
+↓
+Future Development
 
-- Base-destruction state
+CODE
+↓
+Actual Implementation
 
-These relationships are functional but create coupling.
+TESTING
+↓
+Verification / Proof
 
-Future architecture should introduce events or explicit service boundaries only where they meaningfully reduce coupling.
+When contradictions appear:
 
-Potential events include:
-
-- EnemySpawned
-- EnemyDamaged
-- EnemyReachedBase
-- EnemyDied
-- WaveStarted
-- EnemySpawnRequested
-- WaveCompleted
-- DefensePlaced
-- DefenseRemoved
-- DefenseUpgraded
-- CombatResolved
-
-Events must not be introduced indiscriminately.
-
-Current status:
-
-🔴 NOT IMPLEMENTED
+1. Inspect implementation.
+2. Determine intended behavior.
+3. Determine authoritative source.
+4. Record the decision.
+5. Update affected documentation.
+6. Continue only after the contradiction is understood.
 
 ---
 
-32. Data Contracts
+Phase 3 — System Ownership
 
-The full data-contract architecture is not yet implemented.
+Status: PASSED
 
-Planned contracts include:
+Major system ownership boundaries were established.
 
-- EnemyDefinition
-- DefenseDefinition
-- BossDefinition
-- RewardDefinition
-- UpgradeDefinition
-- QuestDefinition
-- MapDefinition
-- MergeDefinition
+Important ownership principles:
 
-Existing configuration is partially data-driven, especially defense configuration.
-
-Do not duplicate configuration systems.
-
----
-
-33. Asset Contract
-
-Planned architecture:
-
-Gameplay
-↓
-Visual ID
-↓
-Asset Registry
-↓
-Model / Texture / Animation / VFX
-
-This is not yet implemented as a complete production pipeline.
+- Game.js is the application-level coordinator.
+- GameState owns current global/session gameplay state that has not yet been separated.
+- EconomySystem owns runtime currency balance.
+- EnemyManager owns active enemy instances and lifecycle.
+- WaveManager owns wave state and progression.
+- DefenseManager owns placed defenses and placement.
+- CombatSystem owns combat resolution boundary.
+- Projectile system owns projectile runtime behavior.
+- UI remains presentation-only.
+- EventBus remains infrastructure-only.
+- DataContracts validates data entering runtime systems.
 
 ---
 
-34. Save Contract
+# 4. Architecture Foundation
 
-Planned save contract:
+Phase 4 — Architecture Foundation
 
-Save Version
-Schema
-Validation
-Migration
-Backup
-Recovery
+Status:
 
-Current implementation:
+PASSED
 
-None
+The foundation was implemented and verified.
 
----
+Current architecture foundation includes:
 
-35. Current Architecture Assessment
-
-Area| Status
-Core| 🟡 Partial / Ownership refinement required
-Time| ✅ Working
-Camera| ✅ Working
-Touch Input| ✅ Working
-World| 🟡 Prototype
-Interaction| ✅ Present
-Enemies| 🟡 Present / Ownership refinement required
-Waves| 🟡 Present / Coupling refinement required
-Defenses| 🟡 Present / Economy coupling
-Combat| 🟡 Present / Combat coupling
-UI| 🟡 Functional prototype
-Economy| 🟡 Partial
-Progression| 🟡 Partial
-Merge| 🔴 Missing
-Collection| 🔴 Missing
-Bosses| 🔴 Missing
-Weather| 🔴 Missing
-Day/Night| 🔴 Missing
-Quests| 🔴 Missing
-Advanced World| 🔴 Missing
-Save| 🔴 Missing
-Audio| 🔴 Missing
-VFX| 🔴 Missing
-Production Assets| 🔴 Missing
-Automated Tests| 🔴 Missing
-Performance Baseline| 🔴 Missing
-Android Project| 🔴 Missing
-Online Architecture| 🔴 Future
-Multiplayer| 🔴 Future
+- EventBus
+- DataContracts
+- EconomySystem boundary
+- CombatSystem boundary
+- Game integration boundary
+- WaveManager/GameState decoupling
+- EnemyManager event communication
+- UI/GameState separation
+- Automated foundation tests
+- Automated integration tests
+- Automated regression tests
+- Static architecture audit
+- Architecture Gate test
 
 ---
 
-36. Repository Structure
+# 5. Architecture Gate
 
-Current known structure:
+Status:
+
+PASSED
+
+Gate verification exists at:
+
+tests/phase4-architecture-gate.test.js
+
+The gate verifies, among other things:
+
+- Required foundation files exist.
+- EconomySystem owns runtime currency.
+- EconomySystem does not depend directly on GameState.
+- Game synchronizes EconomySystem with GameState.
+- DataContracts exists for current core data.
+- EventBus remains infrastructure-only.
+- Save ownership is documented.
+- UI does not directly depend on GameState.
+- Static architecture audit exists.
+- Regression testing remains part of the foundation.
+
+The repository also contains the Phase 4 automated test suite.
+
+Latest verified Phase 4 workflow:
+
+Workflow:
+Phase 4 Tests
+
+Run:
+#22
+
+Commit:
+2c4dc4b2162097258e9fc4c9be9f94c185eb95eb
+
+Result:
+
+SUCCESS
+
+Verified jobs:
+
+1. Phase 4 Foundation Tests
+2. Phase 4 Integration Tests
+3. Phase 4 Regression Tests
+4. Phase 4 Static Architecture Audit
+
+All four jobs passed.
+
+---
+
+# 6. Current Technology
+
+Rendering:
+
+- Three.js
+- Version currently loaded: r128
+- Loaded through CDN in index.html
+
+Application architecture:
+
+- Browser-based JavaScript application.
+- Script files are loaded manually through index.html.
+- Current code does not use ES module imports as its primary runtime architecture.
+
+Current dependency/build state:
+
+- package-lock.json exists.
+- package.json is not currently present.
+- packages object in package-lock.json is empty.
+- No Vite pipeline.
+- No Webpack pipeline.
+- No TypeScript pipeline.
+- No native Android/Gradle project.
+- No production build pipeline.
+
+Testing:
+
+- Node.js test runner.
+- GitHub Actions.
+- Phase 4 automated test workflow.
+
+The current manually loaded script architecture is intentionally retained until
+a controlled build-system migration is justified.
+
+Do not introduce build tooling merely for appearance.
+
+---
+
+# 7. Current Repository Structure
+
+Current repository contains:
 
 /
+├── .github/
+│   └── workflows/
+│       └── phase4-tests.yml
+│
 ├── index.html
-├── README.md
+├── package-lock.json
+│
 ├── AI_DEVELOPMENT_PROTOCOL.md
 ├── ARCHITECTURE.md
 ├── ARCHITECTURE_DEBT.md
@@ -903,362 +320,1969 @@ Current known structure:
 ├── DECISIONS.md
 ├── GAME_SPEC.md
 ├── PROJECT_STATE.md
+├── README.md
 ├── ROADMAP.md
 ├── SAVE_SCHEMA.md
 ├── TECHNICAL_RULES.md
-├── TESTING.md
-└── src/
-├── camera/
-│   └── CameraController.js
-├── combat/
-│   ├── Projectile.js
-│   └── ProjectileManager.js
-├── core/
-│   ├── Config.js
-│   ├── Game.js
-│   ├── GameState.js
-│   └── Time.js
-├── defenses/
-│   ├── Defense.js
-│   └── DefenseManager.js
-├── enemies/
-│   ├── Enemy.js
-│   ├── EnemyManager.js
-│   └── EnemyPath.js
-├── input/
-│   └── TouchControls.js
-├── interaction/
-│   └── InteractionController.js
-├── ui/
-│   ├── BaseHUD.js
-│   ├── DefenseUI.js
-│   ├── GameOverUI.js
-│   ├── Toast.js
-│   └── WaveUI.js
-├── waves/
-│   └── WaveManager.js
-└── world/
-├── DefenseMap.js
-├── Interactables.js
-├── Island.js
-└── Ocean.js
+└── TESTING.md
+│
+├── src/
+│   ├── camera/
+│   │   └── CameraController.js
+│   │
+│   ├── combat/
+│   │   ├── CombatSystem.js
+│   │   ├── Projectile.js
+│   │   └── ProjectileManager.js
+│   │
+│   ├── core/
+│   │   ├── Config.js
+│   │   ├── DataContracts.js
+│   │   ├── EventBus.js
+│   │   ├── Game.js
+│   │   ├── GameState.js
+│   │   └── Time.js
+│   │
+│   ├── defenses/
+│   │   ├── Defense.js
+│   │   └── DefenseManager.js
+│   │
+│   ├── economy/
+│   │   └── EconomySystem.js
+│   │
+│   ├── enemies/
+│   │   ├── Enemy.js
+│   │   ├── EnemyManager.js
+│   │   └── EnemyPath.js
+│   │
+│   ├── input/
+│   │   └── TouchControls.js
+│   │
+│   ├── interaction/
+│   │   └── InteractionController.js
+│   │
+│   ├── ui/
+│   │   ├── BaseHUD.js
+│   │   ├── DefenseUI.js
+│   │   ├── GameOverUI.js
+│   │   ├── Toast.js
+│   │   └── WaveUI.js
+│   │
+│   ├── waves/
+│   │   └── WaveManager.js
+│   │
+│   └── world/
+│       ├── DefenseMap.js
+│       ├── Interactables.js
+│       ├── Island.js
+│       └── Ocean.js
+│
+└── tests/
+    ├── phase4-architecture-audit.test.js
+    ├── phase4-architecture-gate.test.js
+    ├── phase4-foundation.test.js
+    ├── phase4-integration.test.js
+    └── phase4-regression.test.js
 
 ---
 
-37. Important Existing Decisions
+# 8. Game Design Reality
 
-These decisions must not be accidentally reversed.
+Infinity Depths is currently:
 
-Camera
+- 3D
+- Mobile-first
+- Strategy
+- Tower Defense
+- Base Building
+- Combat
+- Offline PvE first
+- Future Online PvP / Co-op
+- Browser-based Three.js project
 
-Fixed-angle top-down around 58°.
+The current prototype is not yet a production-ready game.
 
-Player
-
-No player body.
-
-Movement
-
-No WASD and no joystick.
-
-Interaction
-
-Direct tap interaction.
-
-Defense Placement
-
-Tap-to-place.
-
-Defense Layout
-
-Free placement.
-
-Exploration
-
-No exploration/fog of war.
-
-Existing Defense System
-
-Do not rebuild merely to introduce future architecture.
-
-Existing Combat System
-
-Do not rebuild merely to introduce future architecture.
-
-Dragging Defenses
-
-Deferred.
-
-Save
-
-Not implemented yet.
-
-Old Player Directory
-
-"src/player/" was removed and must not be reintroduced unless the design explicitly changes.
+The architecture is being stabilized before large-scale content expansion.
 
 ---
 
-38. Cache-Busting Rule
+# 9. Camera
 
-Current "index.html" uses JavaScript cache query parameters.
+Current implementation:
 
-Current known version:
+- Fixed-angle top-down camera.
+- Approximately 58° intended viewing angle.
+- Camera pan.
+- Camera zoom.
+- Camera bounds.
+- Touch-oriented interaction.
 
-?v=11
+The player does not control a character body.
 
-Whenever JavaScript files are changed, the corresponding cache version must be incremented as required so mobile browsers do not continue using stale code.
+Not part of the intended core control model:
 
-This must be verified rather than assumed after future code changes.
+- WASD movement.
+- First-person camera.
+- Third-person character movement.
+- Joystick-controlled avatar.
+- Exploration controlled by a character.
 
----
-
-39. Phase Position
-
-The approved development sequence is:
-
-PHASE 0 — FULL REPOSITORY AUDIT
-↓
-PHASE 1 — PROJECT MEMORY
-↓
-PHASE 2 — SOURCE OF TRUTH
-↓
-PHASE 3 — SYSTEM OWNERSHIP
-↓
-PHASE 4 — ARCHITECTURE FOUNDATION
-↓
-ARCHITECTURE GATE
-↓
-PHASE 5 — VERTICAL SLICE
-↓
-VERTICAL SLICE GATE
-↓
-PHASE 6 — ECONOMY
-↓
-FUTURE SYSTEM PHASES
-
-Current Position
-
-PHASE 0 — COMPLETED
-
-PHASE 1 — COMPLETED
-
-PHASE 2 — AUDIT COMPLETED
-
-PHASE 3 — SYSTEM OWNERSHIP AUDIT COMPLETED
-
-Current State
-
-PHASE 3 — SYSTEM OWNERSHIP
-
-STATUS:
-
-🟡 AUDIT COMPLETE — AWAITING PHASE 3 GATE
-
-The ownership audit identified existing direct dependencies that must be addressed architecturally in Phase 4.
-
-No broad refactor has been performed merely to make the architecture appear cleaner.
-
-Next Phase
-
-PHASE 4 — ARCHITECTURE FOUNDATION
-
-Phase 4 may begin only after the Phase 3 gate is explicitly passed.
+The camera is the primary player/world interaction viewpoint.
 
 ---
 
-40. Phase 0 Audit Result
+# 10. World
 
-The repository was inspected at the currently accessible source level.
+Current world systems:
 
-Known facts:
+- Ocean.
+- Island/base.
+- Defense map.
+- World interactables.
+- Basic environment objects.
 
-- Core gameplay structure exists.
-- World structure exists.
-- Camera/input systems exist.
-- Enemy system exists.
-- Wave system exists.
-- Defense system exists.
-- Combat/projectile system exists.
-- Basic UI exists.
-- Basic economy interaction exists.
-- Partial progression state exists.
-- Save system does not exist.
-- Automated testing does not exist.
-- Formal build tooling has not been identified.
-- Android project does not exist.
-- Full data contracts do not exist.
-- Full event architecture does not exist.
-- Production asset pipeline does not exist.
-- Performance baseline does not exist.
+Current visual implementation is prototype-level.
 
-No major duplicate gameplay system was identified during the initial audit.
+Current rendering relies heavily on:
 
-The project is currently a functional prototype foundation, not yet a production-ready architecture.
+- Three.js primitive geometry.
+- Prototype materials.
+- Procedural/basic scene construction.
 
----
+Not yet implemented as production systems:
 
-41. Phase 3 System Ownership Audit
+- Final asset pipeline.
+- Advanced environment simulation.
+- Weather.
+- Day/night.
+- Advanced environmental events.
+- Production VFX environment layer.
+- Production audio environment.
 
-The following ownership findings have been confirmed by direct source inspection.
+Important design rule:
 
-Enemy System
+The core game does not use exploration/fog-of-war as a mandatory gameplay system.
 
-Enemy owns:
+The visible battlefield is intended to remain available to the player.
 
-- Enemy instance state
-- HP
-- Movement
-- Status effects
-- Lifecycle
-- Death state
-
-EnemyManager owns:
-
-- Active enemy collection
-- Spawn
-- Update
-- Cleanup
-- Alive-enemy queries
-
-Current violation:
-
-EnemyManager directly performs:
-
-- Base damage through GameState
-- Enemy-kill rewards through GameState
-
-Resolution is deferred to Architecture Foundation.
+Progression unlocks maps/levels/content rather than hiding the current battlefield
+behind exploration.
 
 ---
 
-Wave System
+# 11. Core Game Coordinator
 
-WaveManager owns:
+File:
 
-- Wave state
-- Countdown
-- Spawn scheduling
-- Difficulty scaling
-- Wave completion
+src/core/Game.js
 
-Current coupling:
+Game.js currently owns application-level coordination.
 
-WaveManager reads GameState for base-destruction state.
+Responsibilities currently include:
 
-Resolution is deferred to Architecture Foundation.
+- Scene creation.
+- Camera creation.
+- Renderer creation.
+- Lighting.
+- Sky.
+- World initialization.
+- Input initialization.
+- Interaction initialization.
+- Base HUD initialization.
+- Economy initialization.
+- Event subscriptions.
+- EnemyManager initialization.
+- WaveManager initialization.
+- ProjectileManager initialization.
+- DefenseManager initialization.
+- Main game loop.
+- Resize handling.
+- Debug HUD.
 
----
+Game.js must remain a coordinator.
 
-Defense System
+It must not gradually become the owner of:
 
-DefenseManager owns:
+- Combat rules.
+- Economy rules.
+- Enemy rules.
+- Defense rules.
+- Wave rules.
+- Progression rules.
+- Quest rules.
+- Save rules.
 
-- Defense instances
-- Placement
-- Validation
-- Update
-- Cleanup
-
-Current coupling:
-
-DefenseManager directly accesses GameState for:
-
-- Affordability
-- Currency spending
-
-Resolution is deferred to Architecture Foundation.
-
----
-
-Combat System
-
-ProjectileManager owns:
-
-- Projectile collection
-- Projectile spawning
-- Projectile updates
-- Projectile cleanup
-
-Projectile owns:
-
-- Projectile movement
-- Lifetime
-- Model
-
-Current coupling:
-
-Projectile directly calls EnemyManager for enemy damage.
-
-Resolution is deferred to Architecture Foundation.
+Cross-system coordination may remain in Game.js when it represents an
+application boundary rather than domain ownership.
 
 ---
 
-UI
+# 12. Game State
 
-BaseHUD reads base state for presentation.
+File:
 
-It does not own base damage or gameplay state.
+src/core/GameState.js
 
-Current ownership is acceptable.
+GameState currently contains runtime state including:
+
+- Player level.
+- Player XP.
+- Player currency.
+- Player rank.
+- Unlocked areas.
+- Unlocked defenses.
+- Interaction state.
+- Base HP.
+- Base maximum HP.
+
+Current state operations include:
+
+- Currency-related compatibility state.
+- Interaction registration.
+- Base damage.
+- Base destruction detection.
+- State summary.
+
+Current architecture status:
+
+PARTIAL
+
+GameState remains a broad state container.
+
+This is still a long-term architecture risk.
+
+However:
+
+GameState is no longer allowed to become the direct dependency of every gameplay
+system.
+
+Current architecture intentionally separates important domains gradually.
+
+Do not perform a blind complete GameState rewrite.
 
 ---
 
-42. Phase 3 Gate
+# 13. EventBus
 
-Current Gate:
+File:
 
-PHASE 3 — SYSTEM OWNERSHIP
+src/core/EventBus.js
 
 Status:
 
-🟡 AUDIT COMPLETE — AWAITING GATE
+IMPLEMENTED
 
-The audit has identified and documented the current ownership boundaries and direct coupling points.
+EventBus is infrastructure-only.
 
-Phase 3 is not considered formally closed until the gate is explicitly passed.
+It does not own gameplay state.
 
-No Phase 4 implementation should begin automatically.
+Current API:
+
+- on(eventName, listener)
+- off(eventName, listener)
+- offAll(eventName)
+- emit(eventName, payload)
+- hasListeners(eventName)
+- clear()
+
+EventBus does not directly depend on:
+
+- GameState
+- WaveManager
+- EnemyManager
+- DefenseManager
+- EconomySystem
+- CombatSystem
+
+Current implementation:
+
+- Synchronous dispatch.
+- No event queue.
+- No async dispatch.
+- No gameplay logic inside EventBus.
+- Listener exceptions are isolated.
+- Listener snapshots are used during dispatch.
+
+EventBus is intentionally small.
+
+Do not turn it into a gameplay manager.
 
 ---
 
-43. Immediate Next Step
+# 14. Current Event Boundaries
 
-The immediate next action is:
+Current important events include:
 
-1. Verify this PROJECT_STATE.md is synchronized with the repository.
-2. Verify ARCHITECTURE_DEBT.md reflects the same Phase 3 ownership findings.
-3. Perform the Phase 3 Gate review.
-4. Explicitly pass or reject the Phase 3 Gate.
-5. Only after approval, begin Phase 4 planning.
-6. Phase 4 must begin with architecture design and contracts, not uncontrolled feature expansion.
+EnemySpawned
+EnemyDamaged
+EnemyReachedBase
+EnemyDied
+
+WaveStarted
+WaveCompleted
+EnemyDefeated
+
+BaseDestroyed
+
+CurrencyChanged
+
+These events are currently used selectively.
+
+Events must not be introduced indiscriminately.
+
+The owning system must emit the event.
+
+The receiving system must not gain hidden ownership of the sender's state.
 
 ---
 
-44. Golden Rule
+# 15. Base Damage Boundary
 
-Infinity Depths must grow as a real scalable game project.
+Current architecture:
 
-Therefore:
+EnemyManager
+↓
+EnemyReachedBase
+↓
+Game
+↓
+GameState.damageBase()
+↓
+BaseDestroyed
+↓
+EventBus
+↓
+WaveManager
 
-Do not rush into features.
+EnemyManager does not directly modify GameState.
 
-Do not rewrite working systems without evidence.
+Game.js is the application integration boundary.
 
-Do not allow GameState to become the permanent owner of every domain.
+GameState remains the current owner of base HP state.
 
-Do not let UI own gameplay.
+WaveManager reacts to BaseDestroyed rather than reading GameState directly.
 
-Do not let one system silently own another system's responsibilities.
+This is an important completed Architecture Foundation boundary.
 
-Do not create architecture merely for appearance.
+---
 
-Do not create files without a real responsibility.
+# 16. Economy
 
-Do not claim completion without verification.
+File:
 
-Every major change must be:
+src/economy/EconomySystem.js
 
-READ → INSPECT → UNDERSTAND → PLAN → IMPLEMENT → TEST → REGRESSION → DOCUMENT → REPORT → STOP
+Status:
 
-And every phase must pass its gate before the next phase begins.
+FOUNDATION IMPLEMENTED
+
+EconomySystem owns the runtime currency balance.
+
+Current API:
+
+- init(initialBalance)
+- canAfford(amount)
+- spend(amount)
+- add(amount)
+- rewardEnemyKill(reward)
+- getBalance()
+
+EconomySystem does not directly depend on GameState.
+
+Current synchronization:
+
+Game
+↓
+EconomySystem.init(GameState.player.currency)
+
+EconomySystem
+↓
+CurrencyChanged
+↓
+Game
+↓
+GameState.player.currency
+
+Current economy functionality:
+
+- Currency balance.
+- Affordability validation.
+- Spending.
+- Adding currency.
+- Enemy kill rewards.
+- CurrencyChanged event.
+
+Current limitations:
+
+The full production Economy system does not yet exist.
+
+Missing future economy features include:
+
+- Multiple resource types.
+- Production/generation.
+- Complete transaction model.
+- Economy persistence.
+- Upgrade economy.
+- Full balancing framework.
+- Complete economy UI.
+- Save integration.
+- Advanced resource systems.
+
+Do not treat the current EconomySystem as the final economy implementation.
+
+Do not expand Economy into Phase 6 before the Vertical Slice Gate.
+
+---
+
+# 17. Defense System
+
+Files:
+
+src/defenses/Defense.js
+src/defenses/DefenseManager.js
+
+UI:
+
+src/ui/DefenseUI.js
+
+Current status:
+
+IMPLEMENTED CORE GAMEPLAY
+
+Current functionality:
+
+- Defense instances.
+- Defense configuration.
+- Defense placement.
+- Tap-to-place interaction.
+- Free placement.
+- Placement validation.
+- Overlap prevention.
+- Economy affordability check.
+- Economy spending through EconomySystem.
+- Defense update loop.
+- Defense cleanup.
+
+Current placement model:
+
+FREE PLACEMENT
+
+Not fixed slots.
+
+Deferred:
+
+- Moving already placed defenses.
+
+DefenseManager currently validates defense definitions through DataContracts.
+
+DefenseManager does not directly access GameState.
+
+Economy interaction goes through EconomySystem.
+
+The existing defense gameplay should be integrated into the Vertical Slice,
+not unnecessarily rebuilt.
+
+---
+
+# 18. Combat
+
+Directory:
+
+src/combat/
+
+Current files:
+
+- CombatSystem.js
+- Projectile.js
+- ProjectileManager.js
+
+Current status:
+
+IMPLEMENTED CORE COMBAT
+
+Current functionality includes:
+
+- Defense attacks.
+- Projectile creation.
+- Projectile movement.
+- Projectile targeting.
+- Projectile hit handling.
+- Enemy damage.
+- Combat resolution boundary.
+- Enemy damage/death flow.
+- Status-effect structure.
+
+Current architecture:
+
+Projectile
+↓
+CombatSystem
+↓
+EnemyManager
+↓
+Enemy
+
+Projectile no longer directly performs:
+
+EnemyManager.damageEnemy()
+
+CombatSystem provides the combat resolution boundary.
+
+Current combat architecture is sufficient for integration into the Vertical Slice.
+
+Do not rebuild Combat merely for architectural aesthetics.
+
+---
+
+# 19. Enemies
+
+Directory:
+
+src/enemies/
+
+Files:
+
+- Enemy.js
+- EnemyManager.js
+- EnemyPath.js
+
+Current status:
+
+CORE SYSTEM IMPLEMENTED
+
+Enemy owns:
+
+- Enemy instance state.
+- Health.
+- Movement state.
+- Path state.
+- Status-effect runtime state.
+- Alive/dead state.
+- Base arrival state.
+- Enemy lifecycle.
+
+EnemyManager owns:
+
+- Active enemy collection.
+- Enemy spawning.
+- Enemy updating.
+- Enemy cleanup.
+- Alive-enemy queries.
+- Enemy damage entry point.
+- Enemy death handling.
+- Base-arrival detection.
+- Event emission.
+
+Current events emitted by EnemyManager include:
+
+- EnemySpawned
+- EnemyDamaged
+- EnemyReachedBase
+- EnemyDied
+
+EnemyManager does not directly modify:
+
+- GameState.
+- Economy.
+- UI.
+
+Enemy death rewards are emitted through EnemyDied and processed at the
+application/economy boundary.
+
+---
+
+# 20. Waves
+
+File:
+
+src/waves/WaveManager.js
+
+Current status:
+
+CORE SYSTEM PRESENT
+
+WaveManager owns:
+
+- Current wave.
+- Wave active state.
+- Wave completion state.
+- Spawned enemy count.
+- Defeated enemy count.
+- Wave configuration.
+- Base-destroyed local state.
+
+WaveManager reacts to:
+
+BaseDestroyed
+
+through EventBus.
+
+WaveManager does not directly depend on GameState.
+
+Current methods include:
+
+- init()
+- startWave()
+- update()
+- registerEnemySpawn()
+- registerEnemyDefeat()
+- summary()
+
+WaveManager currently contains the foundation required for wave progression,
+but its full Vertical Slice integration is not yet complete.
+
+Important:
+
+The final wave/enemy orchestration must be verified end-to-end during Phase 5.
+
+---
+
+# 21. Interaction
+
+File:
+
+src/interaction/InteractionController.js
+
+Current status:
+
+CORE SYSTEM PRESENT
+
+Current functionality:
+
+- Tap interaction.
+- World interaction.
+- Defense placement interaction.
+- Interaction with visible world objects.
+
+Interaction is an input/application boundary.
+
+It should not become the owner of gameplay state.
+
+---
+
+# 22. Input
+
+File:
+
+src/input/TouchControls.js
+
+Current status:
+
+CORE SYSTEM PRESENT
+
+Current functionality:
+
+- Touch input.
+- Camera pan.
+- Zoom.
+- Mobile-oriented gestures.
+
+The project is Mobile-First.
+
+Input should translate device actions into gameplay/application requests rather
+than own gameplay rules.
+
+---
+
+# 23. UI
+
+Directory:
+
+src/ui/
+
+Files:
+
+- BaseHUD.js
+- DefenseUI.js
+- GameOverUI.js
+- Toast.js
+- WaveUI.js
+
+Current status:
+
+FUNCTIONAL PROTOTYPE UI
+
+Current UI functionality includes:
+
+- Base HP display.
+- Wave information.
+- Defense selection/placement UI.
+- Toast notifications.
+- Game-over UI.
+- Defense placement state handling.
+
+Architecture rule:
+
+UI does not own authoritative gameplay state.
+
+UI must not:
+
+- Directly modify GameState.
+- Perform authoritative economy transactions.
+- Calculate combat damage.
+- Spawn enemies directly.
+- Complete quests directly.
+- Write save data directly.
+
+UI should display gameplay state and request actions.
+
+---
+
+# 24. Time
+
+File:
+
+src/core/Time.js
+
+Current status:
+
+WORKING
+
+Responsibilities:
+
+- Central game clock.
+- Delta time.
+- Elapsed time.
+- Three.js clock integration.
+
+Gameplay systems that depend on time should use the central time source
+where practical.
+
+Do not introduce independent clocks without a justified reason.
+
+---
+
+# 25. Data Contracts
+
+File:
+
+src/core/DataContracts.js
+
+Current status:
+
+FOUNDATION IMPLEMENTED
+
+Current validation includes:
+
+- Enemy Definition.
+- Enemy Spawn Data.
+- Defense Definition.
+- Configuration.
+
+Current validators include:
+
+- validateEnemyDefinition()
+- validateEnemySpawnData()
+- validateDefenseDefinition()
+- validateConfig()
+
+The architecture distinguishes:
+
+Definition
+vs
+Runtime Instance
+
+Example:
+
+EnemyDefinition
+↓
+Enemy Runtime Instance
+
+DefenseDefinition
+↓
+Defense Runtime Instance
+
+DataContracts should remain architecture-neutral.
+
+It should validate data rather than own gameplay state.
+
+Future contracts may include:
+
+- BossDefinition.
+- RewardDefinition.
+- UpgradeDefinition.
+- QuestDefinition.
+- MapDefinition.
+- MergeDefinition.
+
+These are future expansions and are not currently implemented as full runtime
+systems.
+
+---
+
+# 26. Configuration
+
+File:
+
+src/core/Config.js
+
+Current status:
+
+IMPLEMENTED PROTOTYPE CONFIGURATION
+
+Configuration currently contains runtime configuration for existing systems,
+including:
+
+- Camera.
+- Lighting.
+- Sky.
+- Performance.
+- Defense configuration.
+- Base configuration.
+- World/gameplay configuration.
+
+Configuration should remain structured.
+
+Do not allow Config.js to become an unstructured global data dump.
+
+As the project grows, configuration may be separated where ownership requires it.
+
+---
+
+# 27. Save System
+
+Current status:
+
+NOT IMPLEMENTED
+
+Important distinction:
+
+The SAVE CONTRACT IS DOCUMENTED.
+
+The actual persistent runtime Save System IS NOT IMPLEMENTED.
+
+Current limitations:
+
+- Reloading the page loses runtime progress.
+- No production local persistence system.
+- No implemented versioned save storage.
+- No migration engine.
+- No backup/recovery implementation.
+- No corruption recovery implementation.
+
+Architecture documentation defines the intended save boundary:
+
+Save System owns persistence.
+
+Gameplay systems provide serializable state through defined contracts.
+
+Future save architecture must include:
+
+- Version.
+- Schema.
+- Validation.
+- Migration.
+- Backup.
+- Recovery.
+
+Do not claim save/reload works until Phase 5/Save implementation has been
+actually implemented and tested.
+
+---
+
+# 28. Progression
+
+Current status:
+
+PARTIAL STATE ONLY
+
+GameState currently contains:
+
+- Player level.
+- XP.
+- Rank.
+- Unlocked areas.
+- Unlocked defenses.
+
+A dedicated ProgressionSystem does not yet exist.
+
+Missing:
+
+- Dedicated progression ownership.
+- Formal XP rules.
+- Level-up rules.
+- Unlock contracts.
+- Map progression runtime.
+- Persistence.
+- Complete progression UI.
+
+Progression must be implemented through a controlled future phase.
+
+---
+
+# 29. Collection / Inventory
+
+Current status:
+
+NOT IMPLEMENTED
+
+No complete CollectionSystem exists.
+
+Future responsibilities:
+
+- Ownership.
+- Quantities.
+- Content metadata.
+- Rarity.
+- Unlocks.
+- Persistent ownership.
+- Collection queries.
+- Integration with rewards and merge.
+
+No collection architecture should be duplicated elsewhere.
+
+---
+
+# 30. Merge System
+
+Current status:
+
+NOT IMPLEMENTED
+
+No runtime MergeSystem exists.
+
+Future requirements include:
+
+- Merge definitions.
+- Recipe validation.
+- Input requirements.
+- Costs.
+- Result generation.
+- Collection integration.
+- Progression integration.
+- Save integration.
+- Deterministic/testable execution.
+
+Do not implement before the appropriate phase/gate.
+
+---
+
+# 31. Boss System
+
+Current status:
+
+NOT IMPLEMENTED
+
+Bosses must eventually extend the existing enemy/combat architecture.
+
+A separate parallel enemy engine must not be created.
+
+Future boss functionality may include:
+
+- Boss definitions.
+- Phases.
+- Special abilities.
+- Enrage.
+- Boss-specific behavior.
+- Boss UI.
+- Boss rewards.
+- Boss VFX/audio hooks.
+
+---
+
+# 32. Quests
+
+Current status:
+
+NOT IMPLEMENTED
+
+Future QuestSystem should primarily consume gameplay events.
+
+Example:
+
+EnemyDied
+↓
+QuestSystem
+↓
+Objective progress
+
+The Enemy system must not know individual quest rules.
+
+---
+
+# 33. Weather / Day & Night
+
+Current status:
+
+NOT IMPLEMENTED
+
+Future world systems.
+
+Potential responsibilities:
+
+- Weather.
+- Day/night.
+- Environmental modifiers.
+- World events.
+
+These must communicate through controlled world contracts/events.
+
+---
+
+# 34. Audio
+
+Current status:
+
+NOT IMPLEMENTED AS A PRODUCTION SYSTEM
+
+No production audio architecture currently exists.
+
+Future system may include:
+
+- Music.
+- Ambient audio.
+- UI sounds.
+- Combat sounds.
+- Defense sounds.
+- Enemy sounds.
+- Boss sounds.
+- Event sounds.
+
+---
+
+# 35. VFX
+
+Current status:
+
+NOT IMPLEMENTED AS A PRODUCTION SYSTEM
+
+No production VFX architecture currently exists.
+
+Future system may include:
+
+- Projectile effects.
+- Hit effects.
+- Status effects.
+- Defense effects.
+- Enemy death effects.
+- Boss effects.
+- Environment effects.
+- UI feedback.
+
+---
+
+# 36. Asset Pipeline
+
+Current status:
+
+NOT IMPLEMENTED AS A COMPLETE PRODUCTION PIPELINE
+
+Current visual assets are primarily:
+
+- Three.js primitives.
+- Prototype geometry.
+- Prototype materials.
+
+Intended architecture:
+
+Gameplay Definition
+↓
+Visual ID
+↓
+Asset Registry
+↓
+Model / Texture / Animation / VFX
+
+Raw asset references should not become scattered throughout gameplay code.
+
+---
+
+# 37. Performance
+
+Current status:
+
+NO FORMAL PERFORMANCE BASELINE
+
+No verified production measurements currently exist for:
+
+- FPS targets.
+- Frame time.
+- CPU usage.
+- GPU usage.
+- Memory.
+- Draw calls.
+- Active entity counts.
+- Projectile counts.
+- VFX counts.
+- Loading time.
+- Thermal behavior.
+
+Performance optimization must be measurement-driven.
+
+Future performance verification must include real mobile devices.
+
+Do not claim production performance is acceptable without measurements.
+
+---
+
+# 38. Mobile
+
+The project is designed Mobile-First.
+
+Current mobile-oriented features:
+
+- Touch controls.
+- Touch camera pan.
+- Touch zoom.
+- Tap interaction.
+- Mobile viewport configuration.
+
+Final mobile verification is NOT complete.
+
+Future real-device testing must include:
+
+- Touch reliability.
+- Different screen sizes.
+- Different aspect ratios.
+- FPS/performance.
+- Memory.
+- Browser compatibility.
+- Orientation.
+- Long sessions.
+- Background/resume behavior.
+
+Rule:
+
+No mobile system is considered fully verified without real-device testing.
+
+---
+
+# 39. Android
+
+Current status:
+
+NOT IMPLEMENTED
+
+There is no native Android/Gradle project in the repository.
+
+Do not introduce Android packaging before the web gameplay architecture and
+Vertical Slice are sufficiently stable.
+
+The browser game remains the current runtime target.
+
+---
+
+# 40. Automated Testing
+
+Current status:
+
+IMPLEMENTED FOUNDATION
+
+Testing uses:
+
+Node.js built-in test runner.
+
+Current test files:
+
+- tests/phase4-foundation.test.js
+- tests/phase4-integration.test.js
+- tests/phase4-regression.test.js
+- tests/phase4-architecture-audit.test.js
+- tests/phase4-architecture-gate.test.js
+
+Current automated coverage includes:
+
+- EventBus behavior.
+- DataContracts validation.
+- GameState interaction behavior.
+- Economy behavior.
+- Combat boundary.
+- Architecture boundaries.
+- Game coordination.
+- Wave/GameState separation.
+- UI/GameState separation.
+- Syntax validation.
+- Regression checks.
+
+GitHub Actions currently runs:
+
+- Foundation tests.
+- Integration tests.
+- Regression tests.
+- Static architecture audit.
+
+Latest Phase 4 workflow:
+
+Run #22
+
+Result:
+
+PASS
+
+---
+
+# 41. Static Architecture Rules Currently Enforced
+
+Automated architecture audit currently verifies, among other things:
+
+- GameState is not directly referenced throughout gameplay systems.
+- WaveManager does not depend on GameState.
+- WaveManager uses EventBus for BaseDestroyed.
+- Game owns EnemyReachedBase coordination.
+- Game applies base damage through GameState.
+- Game emits BaseDestroyed after the state transition.
+- EventBus exposes its required API.
+- GameState does not depend directly on EventBus.
+- EventBus remains independent from gameplay systems.
+- No obvious self-dependencies through imports/requires.
+- All source JavaScript files remain syntactically valid.
+
+These checks are intended to prevent architectural regression.
+
+---
+
+# 42. Current Dependency Boundaries
+
+Current important boundaries:
+
+Game
+↓
+EconomySystem
+
+EconomySystem
+↓
+CurrencyChanged
+↓
+Game
+↓
+GameState
+
+EnemyManager
+↓
+EnemyReachedBase
+↓
+Game
+↓
+GameState
+↓
+BaseDestroyed
+↓
+EventBus
+↓
+WaveManager
+
+Projectile
+↓
+CombatSystem
+↓
+EnemyManager
+↓
+Enemy
+
+DefenseManager
+↓
+EconomySystem
+
+DefenseManager
+↓
+Defense
+
+WaveManager
+↓
+Enemy spawning/registration boundary
+
+UI
+↓
+Gameplay/Application commands
+
+UI does not directly own GameState.
+
+---
+
+# 43. Current Gameplay Loop
+
+Current systems collectively provide portions of the following loop:
+
+Game Start
+↓
+Initial State
+↓
+Defense Placement
+↓
+Wave State
+↓
+Enemy Spawn
+↓
+Enemy Movement
+↓
+Defense Targeting
+↓
+Projectile
+↓
+Combat Resolution
+↓
+Enemy Damage
+↓
+Enemy Death
+↓
+Currency Reward
+↓
+Wave Progression
+↓
+Enemy Reaches Base
+↓
+Base Damage
+↓
+Base Destruction
+↓
+Game Over
+
+Important:
+
+The systems exist, but the complete representative loop has NOT yet passed
+the Phase 5 Vertical Slice Gate.
+
+Phase 5 exists specifically to prove this loop end-to-end rather than assuming
+that individually working systems automatically form a complete game loop.
+
+---
+
+# 44. Vertical Slice Target
+
+Phase 5 must prove a representative playable loop.
+
+Target:
+
+Game Start
+↓
+Initial State
+↓
+Defense Placement
+↓
+Wave Start
+↓
+Enemy Spawn
+↓
+Enemy Movement
+↓
+Combat
+↓
+Enemy Damage
+↓
+Enemy Death
+↓
+Currency Reward
+↓
+Wave Completion
+↓
+Next Wave
+↓
+Enemy Reaches Base
+↓
+Base Damage
+↓
+Base Destruction
+↓
+Game Over
+
+The Vertical Slice must eventually also prove the appropriate persistence/reload
+boundary required by the gate.
+
+Do not mark Phase 5 complete until the complete acceptance criteria are tested.
+
+---
+
+# 45. Current Known Architecture Risks
+
+Risk 1:
+
+GameState remains a broad state container.
+
+Status:
+
+KNOWN / CONTROLLED
+
+Action:
+
+Gradually separate ownership where justified.
+
+Do not perform blind rewrites.
+
+---
+
+Risk 2:
+
+The current project still uses manually loaded JavaScript files.
+
+Status:
+
+KNOWN
+
+Action:
+
+Evaluate build/dependency migration only when justified by project needs.
+
+---
+
+Risk 3:
+
+Save System is not implemented.
+
+Status:
+
+KNOWN
+
+Action:
+
+Implement through the appropriate phase and gate.
+
+---
+
+Risk 4:
+
+Performance baseline is not formally measured.
+
+Status:
+
+KNOWN
+
+Action:
+
+Introduce measurement-based performance testing at the appropriate phase.
+
+---
+
+Risk 5:
+
+Final production assets are not implemented.
+
+Status:
+
+KNOWN
+
+Action:
+
+Use the planned asset contract and later visual-production phases.
+
+---
+
+Risk 6:
+
+Full Vertical Slice integration has not yet been proven.
+
+Status:
+
+CURRENT PRIMARY DEVELOPMENT RISK
+
+Action:
+
+Phase 5.
+
+---
+
+# 46. Explicitly Deferred Features
+
+The following are intentionally NOT current priorities:
+
+- Player character body.
+- WASD movement.
+- Joystick character movement.
+- Exploration system.
+- Fog of war.
+- Defense movement.
+- Full online multiplayer.
+- PvP.
+- Co-op.
+- Native Android packaging.
+- Large-scale economy expansion.
+- Large-scale progression expansion.
+- Collection.
+- Merge.
+- Bosses.
+- Quests.
+- Weather.
+- Day/night.
+- Production audio.
+- Production VFX.
+- Final art pipeline.
+
+Deferred does not mean cancelled.
+
+It means they must be implemented through the appropriate architecture and
+development phase.
+
+---
+
+# 47. Architecture Principles That Must Not Be Violated
+
+Single Ownership:
+
+Every important gameplay state must have one authoritative owner.
+
+UI:
+
+UI must remain presentation-oriented.
+
+Economy:
+
+EconomySystem owns runtime economy balance.
+
+Combat:
+
+Combat resolution belongs to CombatSystem.
+
+Enemies:
+
+EnemyManager/Enemy own enemy runtime state.
+
+Waves:
+
+WaveManager owns wave state.
+
+Persistence:
+
+Save System will own persistence.
+
+Events:
+
+EventBus remains infrastructure-only.
+
+Definitions:
+
+Definitions describe content.
+
+Instances:
+
+Instances contain runtime state.
+
+Game:
+
+Game.js coordinates systems but must not become a God Object.
+
+Dependencies:
+
+Avoid unnecessary circular dependencies.
+
+Content:
+
+Content should become increasingly data-driven.
+
+Testing:
+
+Every architectural change must be tested and regression-checked.
+
+---
+
+# 48. Definition vs Runtime Instance Rule
+
+Definitions describe permanent/static content.
+
+Runtime instances represent active objects.
+
+Example:
+
+EnemyDefinition
+↓
+Enemy Instance
+
+DefenseDefinition
+↓
+Defense Instance
+
+Definitions may contain:
+
+- IDs.
+- Base statistics.
+- Costs.
+- Configuration.
+- Visual IDs.
+
+Instances may contain:
+
+- Position.
+- Runtime health.
+- Cooldowns.
+- Targets.
+- Runtime modifiers.
+- Lifecycle state.
+
+Do not mix static content definitions with temporary runtime state.
+
+---
+
+# 49. Offline Rule
+
+The core game must remain playable offline.
+
+Offline PvE must not require:
+
+- Authentication.
+- Server connection.
+- Remote configuration.
+- Online services.
+
+Future online services must sit outside the offline gameplay core.
+
+---
+
+# 50. Future Online Boundary
+
+Future architecture:
+
+Client
+↓
+Game Application
+↓
+Gameplay Domain
+↓
+Online Adapter
+↓
+Server
+
+Gameplay systems should not all become network-aware.
+
+Future competitive systems should use server-authoritative validation for:
+
+- Currency.
+- Damage results.
+- Inventory ownership.
+- Progression.
+- Match results.
+
+This is future architecture only.
+
+It is NOT currently implemented.
+
+---
+
+# 51. Current Verification Status
+
+Repository structure:
+
+VERIFIED
+
+Core architecture:
+
+VERIFIED
+
+EventBus:
+
+VERIFIED
+
+DataContracts:
+
+VERIFIED
+
+Economy boundary:
+
+VERIFIED
+
+Combat boundary:
+
+VERIFIED
+
+Wave/GameState separation:
+
+VERIFIED
+
+UI/GameState separation:
+
+VERIFIED
+
+Automated Phase 4 tests:
+
+PASSED
+
+Static architecture audit:
+
+PASSED
+
+Architecture Gate:
+
+PASSED
+
+Vertical Slice:
+
+NOT YET COMPLETED
+
+Save/reload:
+
+NOT IMPLEMENTED
+
+Real-device mobile verification:
+
+NOT COMPLETED
+
+Formal performance baseline:
+
+NOT COMPLETED
+
+Production asset pipeline:
+
+NOT IMPLEMENTED
+
+Production audio:
+
+NOT IMPLEMENTED
+
+Production VFX:
+
+NOT IMPLEMENTED
+
+---
+
+# 52. Current Source-of-Truth Snapshot
+
+The following implementation files are currently important to the architecture:
+
+src/core/Game.js
+
+src/core/GameState.js
+
+src/core/EventBus.js
+
+src/core/DataContracts.js
+
+src/core/Config.js
+
+src/core/Time.js
+
+src/economy/EconomySystem.js
+
+src/enemies/Enemy.js
+
+src/enemies/EnemyManager.js
+
+src/enemies/EnemyPath.js
+
+src/waves/WaveManager.js
+
+src/defenses/Defense.js
+
+src/defenses/DefenseManager.js
+
+src/combat/CombatSystem.js
+
+src/combat/Projectile.js
+
+src/combat/ProjectileManager.js
+
+src/interaction/InteractionController.js
+
+src/input/TouchControls.js
+
+src/ui/BaseHUD.js
+
+src/ui/DefenseUI.js
+
+src/ui/GameOverUI.js
+
+src/ui/Toast.js
+
+src/ui/WaveUI.js
+
+src/world/DefenseMap.js
+
+src/world/Interactables.js
+
+src/world/Island.js
+
+src/world/Ocean.js
+
+---
+
+# 53. Phase 5 Rules
+
+Phase 5 must follow:
+
+READ
+→ INSPECT
+→ UNDERSTAND
+→ PLAN
+→ IMPLEMENT
+→ TEST
+→ REGRESSION
+→ DOCUMENT
+→ REPORT
+→ STOP
+
+Before implementation:
+
+- Inspect all systems participating in the Vertical Slice.
+- Identify missing integration boundaries.
+- Do not rebuild working Defense systems.
+- Do not rebuild working Combat systems.
+- Do not duplicate Economy.
+- Do not bypass EventBus boundaries unnecessarily.
+- Do not introduce large future systems.
+- Do not mark untested functionality complete.
+
+After implementation:
+
+- Run static validation.
+- Run unit tests.
+- Run integration tests.
+- Run regression tests.
+- Run gameplay verification.
+- Perform mobile verification where required.
+- Document the result.
+- Evaluate the Vertical Slice Gate.
+- STOP.
+
+---
+
+# 54. Immediate Next Development Objective
+
+The next authorized objective is:
+
+PHASE 5 — VERTICAL SLICE
+
+The first task is NOT to expand the Economy.
+
+The first task is to inspect the current runtime integration and establish the
+minimum missing connections required to prove the representative gameplay loop.
+
+The target is:
+
+Start
+→ Defense
+→ Wave
+→ Enemy
+→ Combat
+→ Death
+→ Reward
+→ Wave Completion
+→ Next Wave
+→ Base Damage
+→ Base Destruction
+→ Game Over
+
+Then the required persistence/reload behavior must be addressed according to
+the Vertical Slice acceptance criteria.
+
+No Phase 6 Economy expansion begins before the Vertical Slice Gate passes.
+
+---
+
+# 55. Stop Condition
+
+At the end of every development task:
+
+REPORT
+↓
+STOP
+
+Do not automatically continue into another phase.
+
+A successful test does not automatically authorize new feature work.
+
+A passed gate authorizes evaluation of the next phase, but the next phase must
+still be explicitly started.
+
+---
+
+# 56. Current Project State Summary
+
+Project:
+
+Infinity Depths
+
+Current Phase:
+
+Phase 5 — Vertical Slice
+
+Architecture Foundation:
+
+PASSED
+
+Architecture Gate:
+
+PASSED
+
+Core prototype:
+
+WORKING
+
+Defense system:
+
+WORKING CORE
+
+Combat system:
+
+WORKING CORE
+
+Enemy system:
+
+WORKING CORE
+
+Wave system:
+
+FOUNDATION PRESENT / VERTICAL SLICE INTEGRATION REQUIRED
+
+Economy:
+
+FOUNDATION PRESENT / FULL ECONOMY NOT IMPLEMENTED
+
+Progression:
+
+PARTIAL STATE ONLY
+
+Collection:
+
+NOT IMPLEMENTED
+
+Merge:
+
+NOT IMPLEMENTED
+
+Boss:
+
+NOT IMPLEMENTED
+
+Quests:
+
+NOT IMPLEMENTED
+
+Weather:
+
+NOT IMPLEMENTED
+
+Day/Night:
+
+NOT IMPLEMENTED
+
+Save System:
+
+NOT IMPLEMENTED
+
+Production Asset Pipeline:
+
+NOT IMPLEMENTED
+
+Audio:
+
+NOT IMPLEMENTED
+
+VFX:
+
+NOT IMPLEMENTED
+
+Performance Baseline:
+
+NOT FORMALLY ESTABLISHED
+
+Real Device Verification:
+
+NOT COMPLETED
+
+Native Android:
+
+NOT IMPLEMENTED
+
+Online:
+
+FUTURE
+
+Multiplayer:
+
+FUTURE
+
+Current primary objective:
+
+PROVE THE VERTICAL SLICE END-TO-END.
+
+Current next gate:
+
+VERTICAL SLICE GATE.
+
+END OF PROJECT STATE
