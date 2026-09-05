@@ -456,47 +456,13 @@ test(
     const context =
       createContext();
 
-    context.GameState = {
-      player: {
-        currency: 10,
-      },
-
-      canAfford(amount) {
-        return (
-          this.player.currency >=
-          amount
-        );
-      },
-
-      spendCurrency(amount) {
-        if (
-          this.player.currency <
-          amount
-        ) {
-          return false;
-        }
-
-        this.player.currency -=
-          amount;
-
-        return true;
-      },
-
-      rewardEnemyKill(amount) {
-        this.player.currency +=
-          amount;
-
-        return {
-          gold: amount,
-          totalGold:
-            this.player.currency,
-        };
-      },
-    };
-
     loadScript(
       "src/economy/EconomySystem.js",
       context
+    );
+
+    context.EconomySystem.init(
+      10
     );
 
     const result =
@@ -507,6 +473,11 @@ test(
     assert.equal(
       result.amount,
       25
+    );
+
+    assert.equal(
+      result.total,
+      35
     );
 
     assert.equal(
@@ -522,47 +493,13 @@ test(
     const context =
       createContext();
 
-    context.GameState = {
-      player: {
-        currency: 10,
-      },
-
-      canAfford(amount) {
-        return (
-          this.player.currency >=
-          amount
-        );
-      },
-
-      spendCurrency(amount) {
-        if (
-          this.player.currency <
-          amount
-        ) {
-          return false;
-        }
-
-        this.player.currency -=
-          amount;
-
-        return true;
-      },
-
-      rewardEnemyKill(amount) {
-        this.player.currency +=
-          amount;
-
-        return {
-          gold: amount,
-          totalGold:
-            this.player.currency,
-        };
-      },
-    };
-
     loadScript(
       "src/economy/EconomySystem.js",
       context
+    );
+
+    context.EconomySystem.init(
+      10
     );
 
     assert.equal(
@@ -585,47 +522,13 @@ test(
     const context =
       createContext();
 
-    context.GameState = {
-      player: {
-        currency: 100,
-      },
-
-      canAfford(amount) {
-        return (
-          this.player.currency >=
-          amount
-        );
-      },
-
-      spendCurrency(amount) {
-        if (
-          this.player.currency <
-          amount
-        ) {
-          return false;
-        }
-
-        this.player.currency -=
-          amount;
-
-        return true;
-      },
-
-      rewardEnemyKill(amount) {
-        this.player.currency +=
-          amount;
-
-        return {
-          gold: amount,
-          totalGold:
-            this.player.currency,
-        };
-      },
-    };
-
     loadScript(
       "src/economy/EconomySystem.js",
       context
+    );
+
+    context.EconomySystem.init(
+      100
     );
 
     assert.equal(
@@ -859,8 +762,15 @@ test(
       );
 
     assert.equal(
+      /EconomySystem\.init\s*\(/.test(
+        source
+      ),
+      true
+    );
+
+    assert.equal(
       source.includes(
-        "EconomySystem.init()"
+        "GameState.player.currency"
       ),
       true
     );
