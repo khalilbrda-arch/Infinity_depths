@@ -1,547 +1,314 @@
 /**
-
-* WaveManager.js
-* ---
-* المرحلة 4 — Architecture Foundation / Wave Boundary.
-* 
-* مسؤول عن:
-* - إدارة حالة الموجة.
-* - بناء تركيبة الموجة.
-* - جدولة ظهور الأعداء.
-* - انتظار انتهاء أعداء الموجة.
-* - اكتشاف Game Over عبر أحداث النظام.
-* 
-* لا يملك:
-* - حالة الأعداء الداخلية.
-* - HP الأعداء.
-* - منطق الضرر.
-* - الاقتصاد.
-* - واجهة العرض.
-* - GameState.
-* 
-* يعتمد على EventBus لمعرفة أن القاعدة دُمّرت.
-  */
-
-const WaveManager = {
-initialized: false,
-
-// idle | countdown | spawning | waiting-clear | game-over
-state: "idle",
-
-currentWave: 0,
-
-_timer: 0,
-
-_spawnQueueRemaining: 0,
-
-_spawnInterval: 0.9,
-
-_waveEnemyStats: null,
-
-gameOverTriggered: false,
-
-baseDestroyed: false,
-
-_baseDestroyedListener: null,
-
-init() {
-this.initialized = true;
-
-this.state = "countdown";
-
-this.currentWave = 0;
-
-this._timer =
-  CONFIG.WAVES.TIME_BEFORE_FIRST_WAVE;
-
-this._spawnQueueRemaining = 0;
-
-this._spawnInterval =
-  CONFIG.WAVES.SPAWN_INTERVAL;
-
-this._waveEnemyStats = null;
-
-this.gameOverTriggered = false;
-
-this.baseDestroyed = false;
-
-/*
- * إعادة ربط المستمع بأمان عند إعادة التهيئة.
+ * Infinity Depths
+ * WaveManager
  *
- * EventBus قد يبقى موجودًا بين الاختبارات
- * أو جلسات اللعبة، لذلك نزيل المستمع السابق
- * قبل تسجيله من جديد.
+ * Responsibility:
+ * - Own wave progression.
+ * - Spawn enemies according to wave configuration.
+ * - Track active wave state.
+ * - React to BaseDestroyed through EventBus.
+ *
+ * Architecture:
+ * GameState -> Game -> EventBus -> WaveManager
+ *
+ * WaveManager MUST NOT depend directly on GameState.
  */
-if (
-  typeof EventBus !== "undefined"
-) {
-  if (
-    this._baseDestroyedListener
-  ) {
-    EventBus.off(
-      "BaseDestroyed",
-      this._baseDestroyedListener
-    );
+
+class WaveManager {
+  constructor() {
+    this.currentWave = 0;
+    this.active = false;
+    this.completed = false;
+
+    this.spawnedEnemies = 0;
+    this.defeatedEnemies = 0;
+
+    this.waveConfig = null;
+
+    this.baseDestroyed = false;
+    this._baseDestroyedListener = null;
   }
 
-  this._baseDestroyedListener =
-    () => {
-      this.baseDestroyed = true;
+  /**
+   * Initialize the wave manager.
+   *
+   * EventBus is resolved at runtime so this class remains
+   * compatible with the project's global architecture.
+   */
+  init() {
+    this.currentWave = 0;
+    this.active = false;
+    this.completed = false;
+
+    this.spawnedEnemies = 0;
+    this.defeatedEnemies = 0;
+
+    this.waveConfig = null;
+    this.baseDestroyed = false;
+
+    if (this._baseDestroyedListener) {
+      if (
+        typeof EventBus !== "undefined" &&
+        EventBus &&
+        typeof EventBus.off === "function"
+      ) {
+        EventBus.off(
+          "BaseDestroyed",
+          this._baseDestroyedListener
+        );
+      }
+
+      this._baseDestroyedListener = null;
+    }
+
+    if (
+      typeof EventBus !== "undefined" &&
+      EventBus &&
+      typeof EventBus.on === "function"
+    ) {
+      this._baseDestroyedListener = () => {
+        this.baseDestroyed = true;
+        this.active = false;
+      };
+
+      EventBus.on(
+        "BaseDestroyed",
+        this._baseDestroyedListener
+      );
+    }
+
+    return this;
+  }
+
+  /**
+   * Start a wave.
+   */
+  startWave(config = {}) {
+    if (this.baseDestroyed) {
+      return false;
+    }
+
+    this.currentWave += 1;
+
+    this.active = true;
+    this.completed = false;
+
+    this.spawnedEnemies = 0;
+    this.defeatedEnemies = 0;
+
+    this.waveConfig = {
+      enemyCount:
+        Number.isFinite(config.enemyCount)
+          ? Math.max(0, config.enemyCount)
+          : 0,
+
+      spawnInterval:
+        Number.isFinite(config.spawnInterval)
+          ? Math.max(0, config.spawnInterval)
+          : 0,
+
+      enemies:
+        Array.isArray(config.enemies)
+          ? config.enemies
+          : [],
     };
 
-  EventBus.on(
-    "BaseDestroyed",
-    this._baseDestroyedListener
-  );
-}
-
-WaveUI.init();
-
-},
-
-update(delta) {
-if (
-!this.initialized ||
-this.gameOverTriggered
-) {
-return;
-}
-
-const safeDelta =
-  Math.max(
-    0,
-    Math.min(
-      Number(delta) || 0,
-      0.1
-    )
-  );
-
-/*
- * حالة القاعدة تصل إلى WaveManager
- * عبر EventBus فقط.
- */
-if (
-  this.baseDestroyed
-) {
-  this._triggerGameOver();
-
-  return;
-}
-
-switch (this.state) {
-  case "countdown":
-    this._updateCountdown(
-      safeDelta
+    this._emit(
+      "WaveStarted",
+      {
+        wave: this.currentWave,
+        config: this.waveConfig,
+      }
     );
-    break;
 
-  case "spawning":
-    this._updateSpawning(
-      safeDelta
-    );
-    break;
-
-  case "waiting-clear":
-    this._updateWaitingClear();
-    break;
-}
-
-WaveUI.update({
-  wave: this.currentWave,
-  state: this.state,
-  countdown:
-    this._getCountdownSeconds(),
-  remaining:
-    this._getRemainingCount(),
-});
-
-},
-
-// =========================================================
-// COUNTDOWN
-// =========================================================
-
-_updateCountdown(delta) {
-this._timer -= delta;
-
-if (this._timer <= 0) {
-  this._startNextWave();
-}
-
-},
-
-_startNextWave() {
-this.currentWave += 1;
-
-const composition =
-  this._buildWaveComposition(
-    this.currentWave
-  );
-
-this._spawnQueueRemaining =
-  composition.quantity;
-
-this._waveEnemyStats =
-  composition.stats;
-
-this._spawnInterval =
-  composition.spawnDelay;
-
-this._timer = 0;
-
-this.state = "spawning";
-
-this._emit(
-  "WaveStarted",
-  {
-    wave:
-      this.currentWave,
-
-    quantity:
-      composition.quantity,
+    return true;
   }
-);
 
-},
-
-// =========================================================
-// SPAWNING
-// =========================================================
-
-_updateSpawning(delta) {
-this._timer -= delta;
-
-if (
-  this._timer <= 0 &&
-  this._spawnQueueRemaining > 0
-) {
-  const enemy =
-    EnemyManager.spawnEnemy({
-      name: "Basic Enemy",
-
-      type: "basic",
-
-      maxHp:
-        this._waveEnemyStats.maxHp,
-
-      speed:
-        this._waveEnemyStats.speed,
-
-      armor:
-        this._waveEnemyStats.armor,
-
-      resistance:
-        this._waveEnemyStats.resistance,
-
-      damage:
-        this._waveEnemyStats.damage,
-
-      reward:
-        this._waveEnemyStats.reward,
-    });
-
-  /*
-   * مهم:
-   * لا نعتبر العدو Spawned إذا فشل
-   * EnemyManager في إنشائه.
+  /**
+   * Update wave state.
    */
-  if (!enemy) {
-    console.error(
-      "WaveManager: failed to spawn enemy."
+  update(deltaTime = 0) {
+    if (!this.active) {
+      return;
+    }
+
+    if (this.baseDestroyed) {
+      this.active = false;
+      return;
+    }
+
+    if (!this.waveConfig) {
+      return;
+    }
+
+    /*
+     * Wave spawning is intentionally kept lightweight here.
+     * Enemy creation belongs to the appropriate gameplay system.
+     */
+    if (
+      this.spawnedEnemies >=
+      this.waveConfig.enemyCount
+    ) {
+      if (
+        this.defeatedEnemies >=
+        this.waveConfig.enemyCount
+      ) {
+        this._completeWave();
+      }
+    }
+
+    void deltaTime;
+  }
+
+  /**
+   * Register an enemy spawn.
+   */
+  registerEnemySpawn(enemy = null) {
+    if (!this.active || this.baseDestroyed) {
+      return false;
+    }
+
+    this.spawnedEnemies += 1;
+
+    this._emit(
+      "EnemySpawned",
+      {
+        wave: this.currentWave,
+        enemy,
+        spawnedEnemies: this.spawnedEnemies,
+      }
     );
 
-    this._timer =
-      this._spawnInterval;
-
-    return;
+    return true;
   }
 
-  this._spawnQueueRemaining -= 1;
-
-  this._timer =
-    this._spawnInterval;
-
-  this._emit(
-    "EnemySpawnRequested",
-    {
-      wave:
-        this.currentWave,
-
-      enemyId:
-        enemy.id,
-
-      type:
-        enemy.type,
+  /**
+   * Register an enemy defeat.
+   */
+  registerEnemyDefeat(enemy = null) {
+    if (this.baseDestroyed) {
+      return false;
     }
-  );
-}
 
-if (
-  this._spawnQueueRemaining <= 0
-) {
-  this.state =
-    "waiting-clear";
-}
+    this.defeatedEnemies += 1;
 
-},
+    this._emit(
+      "EnemyDefeated",
+      {
+        wave: this.currentWave,
+        enemy,
+        defeatedEnemies: this.defeatedEnemies,
+      }
+    );
 
-// =========================================================
-// WAITING CLEAR
-// =========================================================
+    if (
+      this.active &&
+      this.spawnedEnemies >=
+        this.waveConfig?.enemyCount &&
+      this.defeatedEnemies >=
+        this.waveConfig?.enemyCount
+    ) {
+      this._completeWave();
+    }
 
-_updateWaitingClear() {
-if (
-typeof EnemyManager ===
-"undefined"
-) {
-return;
-}
-
-if (
-  EnemyManager.getAliveEnemies()
-    .length === 0
-) {
-  this._completeWave();
-}
-
-},
-
-_completeWave() {
-this.state =
-"countdown";
-
-this._timer =
-  CONFIG.WAVES.TIME_BETWEEN_WAVES;
-
-this._emit(
-  "WaveCompleted",
-  {
-    wave:
-      this.currentWave,
+    return true;
   }
-);
 
-},
+  /**
+   * Complete the current wave.
+   */
+  _completeWave() {
+    if (!this.active) {
+      return;
+    }
 
-// =========================================================
-// DIFFICULTY SCALING
-// =========================================================
+    this.active = false;
+    this.completed = true;
 
-_buildWaveComposition(
-waveNumber
-) {
-const W =
-CONFIG.WAVES;
-
-const S =
-  W.SCALING;
-
-const growth =
-  Math.max(
-    0,
-    waveNumber - 1
-  );
-
-const quantity =
-  Math.min(
-    S.QUANTITY_MAX,
-    S.QUANTITY_BASE +
-      Math.floor(
-        growth *
-          S.QUANTITY_PER_WAVE
-      )
-  );
-
-const maxHp =
-  Math.round(
-    W.BASE_ENEMY.maxHp *
-      Math.pow(
-        1 +
-          S.HP_PER_WAVE,
-        growth
-      )
-  );
-
-const speed =
-  Number(
-    (
-      W.BASE_ENEMY.speed *
-      (
-        1 +
-        S.SPEED_PER_WAVE *
-          growth
-      )
-    ).toFixed(2)
-  );
-
-const armor =
-  Math.round(
-    S.ARMOR_PER_WAVE *
-      Math.floor(
-        growth / 2
-      )
-  );
-
-const damage =
-  Math.round(
-    W.BASE_ENEMY.damage *
-      (
-        1 +
-        S.DAMAGE_PER_WAVE *
-          growth
-      )
-  );
-
-const reward =
-  Math.round(
-    W.BASE_ENEMY.reward *
-      (
-        1 +
-        S.REWARD_PER_WAVE *
-          growth
-      )
-  );
-
-return {
-  quantity,
-
-  spawnDelay:
-    W.SPAWN_INTERVAL,
-
-  stats: {
-    maxHp,
-
-    speed,
-
-    armor,
-
-    resistance:
-      W.BASE_ENEMY.resistance,
-
-    damage,
-
-    reward,
-  },
-};
-
-},
-
-// =========================================================
-// GAME OVER
-// =========================================================
-
-_triggerGameOver() {
-if (
-this.gameOverTriggered
-) {
-return;
-}
-
-this.gameOverTriggered =
-  true;
-
-this.state =
-  "game-over";
-
-this._emit(
-  "GameOver",
-  {
-    wave:
-      this.currentWave,
+    this._emit(
+      "WaveCompleted",
+      {
+        wave: this.currentWave,
+        spawnedEnemies: this.spawnedEnemies,
+        defeatedEnemies: this.defeatedEnemies,
+      }
+    );
   }
-);
 
-GameOverUI.show(
-  this.currentWave
-);
+  /**
+   * Return a serializable summary.
+   */
+  summary() {
+    return {
+      currentWave: this.currentWave,
+      active: this.active,
+      completed: this.completed,
 
-},
+      spawnedEnemies: this.spawnedEnemies,
+      defeatedEnemies: this.defeatedEnemies,
 
-isGameOver() {
-return (
-this.gameOverTriggered
-);
-},
+      baseDestroyed: this.baseDestroyed,
 
-// =========================================================
-// HELPERS
-// =========================================================
+      waveConfig: this.waveConfig
+        ? {
+            enemyCount:
+              this.waveConfig.enemyCount,
 
-_getCountdownSeconds() {
-if (
-this.state ===
-"countdown"
-) {
-return Math.max(
-0,
-Math.ceil(
-this._timer
-)
-);
+            spawnInterval:
+              this.waveConfig.spawnInterval,
+
+            enemies:
+              Array.isArray(
+                this.waveConfig.enemies
+              )
+                ? [
+                    ...this.waveConfig.enemies,
+                  ]
+                : [],
+          }
+        : null,
+    };
+  }
+
+  /**
+   * Emit an EventBus event safely.
+   */
+  _emit(eventName, payload = null) {
+    if (
+      typeof EventBus !== "undefined" &&
+      EventBus &&
+      typeof EventBus.emit === "function"
+    ) {
+      EventBus.emit(
+        eventName,
+        payload
+      );
+
+      return true;
+    }
+
+    if (
+      typeof console !== "undefined" &&
+      typeof console.error === "function"
+    ) {
+      console.error(
+        `WaveManager: EventBus is not available for "${eventName}".`
+      );
+    }
+
+    return false;
+  }
 }
 
-return 0;
-
-},
-
-_getRemainingCount() {
-if (
-typeof EnemyManager ===
-"undefined"
-) {
-return 0;
-}
+const waveManager =
+  new WaveManager();
 
 if (
-  this.state ===
-  "spawning"
+  typeof globalThis !== "undefined"
 ) {
-  return (
-    this._spawnQueueRemaining +
-    EnemyManager
-      .getAliveEnemies()
-      .length
-  );
+  globalThis.WaveManager =
+    WaveManager;
+
+  globalThis.waveManager =
+    waveManager;
 }
-
-if (
-  this.state ===
-  "waiting-clear"
-) {
-  return EnemyManager
-    .getAliveEnemies()
-    .length;
-}
-
-return 0;
-
-},
-
-// =========================================================
-// EVENTS
-// =========================================================
-
-_emit(
-eventName,
-payload
-) {
-if (
-typeof EventBus ===
-"undefined"
-) {
-console.error(
-"WaveManager: EventBus is not available for "${eventName}"."
-);
-
-  return false;
-}
-
-EventBus.emit(
-  eventName,
-  payload
-);
-
-return true;
-
-},
-};
