@@ -4,11 +4,21 @@
  * واجهة قاعدة اللاعب.
  *
  * تعرض:
- *  - HP الحالي
- *  - Max HP
+ * - HP الحالي.
+ * - Max HP.
  *
- * لا تحتوي على منطق ضرر.
- * تقرأ فقط من GameState.
+ * لا تقرأ GameState مباشرة.
+ *
+ * الحالة تصل إليها عبر:
+ *
+ * Game
+ *   ↓
+ * EventBus
+ *   ↓
+ * BaseHUD
+ *
+ * الحدث المستخدم:
+ * BaseHealthChanged
  */
 
 const BaseHUD = {
@@ -16,10 +26,43 @@ const BaseHUD = {
   _bar: null,
   _text: null,
 
-  init() {
-    if (this._container) return;
+  _hp: 0,
+  _maxHp: 1,
 
-    const container = document.createElement("div");
+  _initialized: false,
+
+  init(initialState = null) {
+    if (this._initialized) {
+      return;
+    }
+
+    if (
+      initialState &&
+      typeof initialState === "object"
+    ) {
+      this._hp = Math.max(
+        0,
+        Number(initialState.hp) || 0
+      );
+
+      this._maxHp = Math.max(
+        1,
+        Number(initialState.maxHp) || 1
+      );
+    }
+
+    this._create();
+
+    this._subscribe();
+
+    this._initialized = true;
+
+    this.update();
+  },
+
+  _create() {
+    const container =
+      document.createElement("div");
 
     container.id = "base-hud";
 
@@ -52,9 +95,11 @@ const BaseHUD = {
         sans-serif;
     `;
 
-    const title = document.createElement("div");
+    const title =
+      document.createElement("div");
 
-    title.textContent = "🏰 قاعدة اللاعب";
+    title.textContent =
+      "🏰 قاعدة اللاعب";
 
     title.style.cssText = `
       color: #ffffff;
@@ -63,7 +108,8 @@ const BaseHUD = {
       margin-bottom: 5px;
     `;
 
-    const barBackground = document.createElement("div");
+    const barBackground =
+      document.createElement("div");
 
     barBackground.style.cssText = `
       width: 100%;
@@ -76,7 +122,8 @@ const BaseHUD = {
       overflow: hidden;
     `;
 
-    const bar = document.createElement("div");
+    const bar =
+      document.createElement("div");
 
     bar.style.cssText = `
       width: 100%;
@@ -91,7 +138,8 @@ const BaseHUD = {
         background 0.2s ease;
     `;
 
-    const text = document.createElement("div");
+    const text =
+      document.createElement("div");
 
     text.style.cssText = `
       margin-top: 4px;
@@ -115,28 +163,74 @@ const BaseHUD = {
     this._container = container;
     this._bar = bar;
     this._text = text;
+  },
 
-    this.update();
+  _subscribe() {
+    if (
+      typeof EventBus === "undefined"
+    ) {
+      return;
+    }
+
+    EventBus.on(
+      "BaseHealthChanged",
+      (payload) => {
+        if (!payload) {
+          return;
+        }
+
+        this._hp = Math.max(
+          0,
+          Number(payload.hp) || 0
+        );
+
+        this._maxHp = Math.max(
+          1,
+          Number(payload.maxHp) || 1
+        );
+
+        this.update();
+      }
+    );
   },
 
   update() {
-    if (!this._container) return;
+    if (
+      !this._container ||
+      !this._bar ||
+      !this._text
+    ) {
+      return;
+    }
 
-    const base = GameState.base;
+    const maxHp = Math.max(
+      1,
+      this._maxHp
+    );
 
-    const maxHp = Math.max(1, base.maxHp);
-    const hp = Math.max(0, Math.min(base.hp, maxHp));
+    const hp = Math.max(
+      0,
+      Math.min(
+        this._hp,
+        maxHp
+      )
+    );
 
-    const ratio = hp / maxHp;
+    const ratio =
+      hp / maxHp;
 
-    this._bar.style.width = `${ratio * 100}%`;
+    this._bar.style.width =
+      `${ratio * 100}%`;
 
     if (ratio > 0.6) {
-      this._bar.style.background = "#55d66b";
+      this._bar.style.background =
+        "#55d66b";
     } else if (ratio > 0.3) {
-      this._bar.style.background = "#ffb347";
+      this._bar.style.background =
+        "#ffb347";
     } else {
-      this._bar.style.background = "#ff5d5d";
+      this._bar.style.background =
+        "#ff5d5d";
     }
 
     this._text.textContent =
