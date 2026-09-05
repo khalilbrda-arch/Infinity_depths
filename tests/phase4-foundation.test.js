@@ -41,7 +41,33 @@ function readSource(relativePath) {
 function loadScript(relativePath, context) {
   const source = readSource(relativePath);
 
-  vm.runInContext(
+  /*
+   * CombatSystem.js يعرّف CombatSystem بواسطة const.
+   * داخل vm لا يظهر تلقائيًا كخاصية في context.
+   * لذلك نعيد القيمة صراحة ونضعها في context.
+   */
+  if (
+    relativePath === "src/combat/CombatSystem.js"
+  ) {
+    const combatSystem =
+      vm.runInContext(
+        `(function () {
+          ${source}
+          return CombatSystem;
+        })()`,
+        context,
+        {
+          filename: relativePath,
+        }
+      );
+
+    context.CombatSystem =
+      combatSystem;
+
+    return combatSystem;
+  }
+
+  return vm.runInContext(
     source,
     context,
     {
