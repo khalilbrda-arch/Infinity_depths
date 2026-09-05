@@ -299,13 +299,26 @@ test(
       1
     );
 
-    assert.deepEqual(
-      receivedPayload,
-      {
-        hp: 0,
-        maxHp: 100,
-        damage: 100,
-      }
+    /*
+     * لا نستخدم deepStrictEqual هنا لأن payload
+     * تم إنشاؤه داخل VM Realm مختلف عن Realm
+     * الخاص باختبارات Node.js.
+     *
+     * نقارن القيم نفسها بدل هوية الـ Object.
+     */
+    assert.equal(
+      receivedPayload.hp,
+      0
+    );
+
+    assert.equal(
+      receivedPayload.maxHp,
+      100
+    );
+
+    assert.equal(
+      receivedPayload.damage,
+      100
     );
   }
 );
