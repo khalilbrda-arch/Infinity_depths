@@ -23,7 +23,7 @@ jobs:
         with:
           node-version: 24
 
-      - name: Run Foundation Tests
+      - name: Run Phase 4 Foundation Tests
         run: |
           node --test tests/phase4-foundation.test.js
 
@@ -40,7 +40,7 @@ jobs:
         with:
           node-version: 24
 
-      - name: Run Integration Tests
+      - name: Run Phase 4 Integration Tests
         run: |
           node --test tests/phase4-integration.test.js
 
@@ -57,6 +57,23 @@ jobs:
         with:
           node-version: 24
 
-      - name: Run Regression Tests
+      - name: Run Phase 4 Regression Tests
         run: |
           node --test tests/phase4-regression.test.js
+
+  phase4-architecture-audit:
+    name: Phase 4 Static Architecture Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Run Static Architecture Audit
+        run: |
+          node --test tests/phase4-architecture-audit.test.js
