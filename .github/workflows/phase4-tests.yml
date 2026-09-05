@@ -4,12 +4,14 @@ on:
   push:
     branches:
       - main
+
   pull_request:
     branches:
       - main
 
 jobs:
   phase4-foundation:
+    name: Phase 4 Foundation Tests
     runs-on: ubuntu-latest
 
     steps:
@@ -19,7 +21,25 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
 
-      - name: Run Phase 4 foundation tests
-        run: node --test tests/phase4-foundation.test.js
+      - name: Run Foundation Tests
+        run: |
+          node --test tests/phase4-foundation.test.js
+
+  phase4-integration:
+    name: Phase 4 Integration Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Run Integration Tests
+        run: |
+          node --test tests/phase4-integration.test.js
