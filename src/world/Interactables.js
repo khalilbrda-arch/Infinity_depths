@@ -5,6 +5,18 @@
  *
  * كل العناصر ظاهرة منذ البداية.
  * لا يوجد Exploration أو Fog of War.
+ *
+ * لا يعتمد مباشرة على GameState.
+ *
+ * الحالة المحلية للتفاعل:
+ * Interactables
+ *   ↓
+ * EventBus
+ *   ↓
+ * Game
+ *
+ * الحدث:
+ * InteractableConsumed
  */
 
 const Interactables = {
@@ -12,18 +24,30 @@ const Interactables = {
 
   _entries: [],
 
+  _openedIds: new Set(),
+
   create(scene) {
     this.group = new THREE.Group();
+
     this._entries = [];
 
-    const C = CONFIG.INTERACTABLES;
+    this._openedIds = new Set();
+
+    const C =
+      CONFIG.INTERACTABLES;
 
     for (const def of C.CHESTS) {
-      this._spawn(def, "chest");
+      this._spawn(
+        def,
+        "chest"
+      );
     }
 
     for (const def of C.RESOURCES) {
-      this._spawn(def, "resource");
+      this._spawn(
+        def,
+        "resource"
+      );
     }
 
     scene.add(this.group);
@@ -32,13 +56,19 @@ const Interactables = {
   },
 
   _spawn(def, type) {
-    const C = CONFIG.INTERACTABLES;
-
-    if (GameState.hasInteracted(def.id)) {
+    if (
+      this._openedIds.has(
+        def.id
+      )
+    ) {
       return;
     }
 
-    const isChest = type === "chest";
+    const C =
+      CONFIG.INTERACTABLES;
+
+    const isChest =
+      type === "chest";
 
     const size = isChest
       ? C.CHEST_SIZE
@@ -59,40 +89,52 @@ const Interactables = {
           0
         );
 
-    const mat = new THREE.MeshStandardMaterial({
-      color,
-      flatShading: true,
-      roughness: 0.6,
-      metalness: 0.1,
-    });
+    const mat =
+      new THREE.MeshStandardMaterial({
+        color,
+        flatShading: true,
+        roughness: 0.6,
+        metalness: 0.1,
+      });
 
-    const mesh = new THREE.Mesh(
-      geo,
-      mat
-    );
+    const mesh =
+      new THREE.Mesh(
+        geo,
+        mat
+      );
 
     mesh.position.set(
       def.x,
-      C.GROUND_Y + size * 0.5,
+      C.GROUND_Y +
+        size * 0.5,
       def.z
     );
 
     mesh.castShadow = true;
 
-    mesh.userData.owner = "interactables";
-    mesh.userData.interactableId = def.id;
+    mesh.userData.owner =
+      "interactables";
+
+    mesh.userData.interactableId =
+      def.id;
 
     this.group.add(mesh);
 
     this._entries.push({
       id: def.id,
+
       type,
+
       mesh,
+
       reward: def.reward,
+
       collected: false,
 
       _bobOffset:
-        Math.random() * Math.PI * 2,
+        Math.random() *
+        Math.PI *
+        2,
 
       _baseY:
         mesh.position.y,
@@ -100,42 +142,68 @@ const Interactables = {
   },
 
   update(elapsed) {
-    const C = CONFIG.INTERACTABLES;
+    const C =
+      CONFIG.INTERACTABLES;
 
-    for (const entry of this._entries) {
-      if (entry.collected) continue;
+    for (
+      const entry of this._entries
+    ) {
+      if (entry.collected) {
+        continue;
+      }
 
       entry.mesh.position.y =
         entry._baseY +
         Math.sin(
-          elapsed * C.BOB_SPEED +
-          entry._bobOffset
+          elapsed *
+            C.BOB_SPEED +
+            entry._bobOffset
         ) *
         C.BOB_HEIGHT;
 
       entry.mesh.rotation.y +=
-        C.SPIN_SPEED * (1 / 60);
+        C.SPIN_SPEED *
+        (1 / 60);
     }
   },
 
   getLiveMeshes() {
     return this._entries
-      .filter(entry => !entry.collected)
-      .map(entry => entry.mesh);
+      .filter(
+        entry =>
+          !entry.collected
+      )
+      .map(
+        entry =>
+          entry.mesh
+      );
   },
 
   interact(mesh) {
     const entry =
       this._entries.find(
-        entry => entry.mesh === mesh
+        entry =>
+          entry.mesh === mesh
       );
 
-    if (!entry || entry.collected) {
+    if (
+      !entry ||
+      entry.collected
+    ) {
       return null;
     }
 
     if (
-      typeof EconomySystem === "undefined"
+      this._openedIds.has(
+        entry.id
+      )
+    ) {
+      return null;
+    }
+
+    if (
+      typeof EconomySystem ===
+      "undefined"
     ) {
       console.error(
         "Interactables: EconomySystem is not available."
@@ -144,27 +212,39 @@ const Interactables = {
       return null;
     }
 
-    const registered =
-      GameState.registerInteraction(
-        entry.id,
-        0
-      );
+    this._openedIds.add(
+      entry.id
+    );
 
-    if (!registered) {
-      return null;
-    }
+    entry.collected = true;
 
     EconomySystem.add(
       entry.reward
     );
 
-    entry.collected = true;
+    if (
+      typeof EventBus !==
+      "undefined"
+    ) {
+      EventBus.emit(
+        "InteractableConsumed",
+        {
+          id: entry.id,
+          type: entry.type,
+          reward: entry.reward,
+        }
+      );
+    }
 
-    this.group.remove(entry.mesh);
+    this.group.remove(
+      entry.mesh
+    );
 
     return {
       id: entry.id,
+
       type: entry.type,
+
       reward: entry.reward,
     };
   },
