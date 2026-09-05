@@ -42,18 +42,34 @@ function loadScript(relativePath, context) {
   const source = readSource(relativePath);
 
   /*
-   * CombatSystem.js يعرّف CombatSystem بواسطة const.
-   * داخل vm لا يظهر تلقائيًا كخاصية في context.
-   * لذلك نعيد القيمة صراحة ونضعها في context.
+   * ملفات اللعبة تستخدم const لتعريف الأنظمة.
+   *
+   * داخل vm:
+   *   const EventBus = ...
+   *
+   * لا تصبح تلقائيًا:
+   *   context.EventBus
+   *
+   * لذلك نعيد الكائن صراحة من داخل نفس النطاق
+   * ثم نضعه في context حتى تستطيع الاختبارات الوصول إليه.
    */
-  if (
-    relativePath === "src/combat/CombatSystem.js"
-  ) {
-    const combatSystem =
+  const exportedNames = {
+    "src/core/EventBus.js": "EventBus",
+    "src/core/DataContracts.js": "DataContracts",
+    "src/core/GameState.js": "GameState",
+    "src/economy/EconomySystem.js": "EconomySystem",
+    "src/combat/CombatSystem.js": "CombatSystem",
+  };
+
+  const exportedName =
+    exportedNames[relativePath];
+
+  if (exportedName) {
+    const value =
       vm.runInContext(
         `(function () {
           ${source}
-          return CombatSystem;
+          return ${exportedName};
         })()`,
         context,
         {
@@ -61,10 +77,10 @@ function loadScript(relativePath, context) {
         }
       );
 
-    context.CombatSystem =
-      combatSystem;
+    context[exportedName] =
+      value;
 
-    return combatSystem;
+    return value;
   }
 
   return vm.runInContext(
