@@ -1,34 +1,32 @@
 /**
-
-* Game.js
-* ---
-* نقطة الدخول الرئيسية للمحرك.
-* 
-* المرحلة الحالية:
-* v0.9 — Defenses + Combat
-* 
-* المسؤول عن:
-* - Scene
-* - Camera
-* - Renderer
-* - Lighting
-* - Sky
-* - World
-* - Input
-* - Interaction
-* - Base HUD
-* - Economy initialization
-* - Enemy Manager
-* - Wave Manager
-* - Projectile Manager
-* - Defense Manager
-* - Event subscriptions بين الأنظمة
-* - Game Loop
-* 
-* لا يوجد Player.
-* الكاميرا ثابتة الزاوية وتُدار عبر CameraController.
-  */
-
+ * Game.js
+ * ---
+ * نقطة الدخول الرئيسية للمحرك.
+ * 
+ * المرحلة الحالية:
+ * v0.9 — Defenses + Combat
+ * 
+ * المسؤول عن:
+ * - Scene
+ * - Camera
+ * - Renderer
+ * - Lighting
+ * - Sky
+ * - World
+ * - Input
+ * - Interaction
+ * - Base HUD
+ * - Economy initialization
+ * - Enemy Manager
+ * - Wave Manager
+ * - Projectile Manager
+ * - Defense Manager
+ * - Event subscriptions بين الأنظمة
+ * - Game Loop
+ * 
+ * لا يوجد Player.
+ * الكاميرا ثابتة الزاوية وتُدار عبر CameraController.
+ */
 const Game = {
 scene: null,
 camera: null,
@@ -71,9 +69,11 @@ InteractionController.init(
 BaseHUD.init();
 
 if (
-  typeof EconomySystem !== "undefined"
+typeof EconomySystem !== "undefined"
 ) {
-  EconomySystem.init();
+  EconomySystem.init(
+    GameState.player.currency
+  );
 }
 
 this._setupEventSubscriptions();
@@ -100,10 +100,6 @@ this._loop();
 
 },
 
-// =========================================================
-// EVENT BOUNDARY
-// =========================================================
-
 _setupEventSubscriptions() {
 if (
 typeof EventBus === "undefined"
@@ -124,11 +120,28 @@ console.error(
  *     ↓
  * EventBus
  *     ↓
- * WaveManager
+ * الأنظمة
  *
- * WaveManager لا يعرف GameState
- * ولا يقرأ حالته مباشرة.
+ * الأنظمة المنخفضة لا تعتمد مباشرة على GameState.
  */
+
+EventBus.on(
+  "CurrencyChanged",
+  (payload) => {
+    if (!payload) {
+      return;
+    }
+
+    const balance = Math.max(
+      0,
+      Number(payload.balance) || 0
+    );
+
+    GameState.player.currency =
+      balance;
+  }
+);
+
 EventBus.on(
   "EnemyReachedBase",
   (payload) => {
@@ -144,15 +157,6 @@ EventBus.on(
         payload.damage
       );
 
-    /*
-     * نرسل BaseDestroyed فقط
-     * عند الانتقال الفعلي من:
-     *
-     * alive → destroyed
-     *
-     * وليس في كل مرة يصل فيها
-     * EnemyReachedBase بعد التدمير.
-     */
     if (
       !wasDestroyed &&
       result.destroyed
@@ -199,10 +203,6 @@ EventBus.on(
 
 },
 
-// =========================================================
-// SCENE
-// =========================================================
-
 _setupScene() {
 this.scene =
 new THREE.Scene();
@@ -214,10 +214,6 @@ this.scene.fog =
   );
 
 },
-
-// =========================================================
-// CAMERA
-// =========================================================
 
 _setupCamera() {
 const c =
@@ -233,10 +229,6 @@ this.camera =
   );
 
 },
-
-// =========================================================
-// RENDERER
-// =========================================================
 
 _setupRenderer() {
 this.renderer =
@@ -267,10 +259,6 @@ this.container.appendChild(
 );
 
 },
-
-// =========================================================
-// LIGHTING
-// =========================================================
 
 _setupLighting() {
 const L =
@@ -312,10 +300,6 @@ this.scene.add(
 );
 
 },
-
-// =========================================================
-// SKY
-// =========================================================
 
 _setupSky() {
 const S =
@@ -409,10 +393,6 @@ this.scene.add(
 
 },
 
-// =========================================================
-// RESIZE
-// =========================================================
-
 _setupResize() {
 window.addEventListener(
 "resize",
@@ -439,10 +419,6 @@ return;
 
 },
 
-// =========================================================
-// BOOT SCREEN
-// =========================================================
-
 _hideBootScreen() {
 const boot =
 document.getElementById(
@@ -455,10 +431,6 @@ if (boot) {
 }
 
 },
-
-// =========================================================
-// DEBUG HUD
-// =========================================================
 
 _updateDebugHud() {
 const hud =
@@ -495,10 +467,6 @@ hud.textContent =
   ` | Defenses: ${defenseCount}`;
 
 },
-
-// =========================================================
-// MAIN LOOP
-// =========================================================
 
 _loop() {
 requestAnimationFrame(
@@ -558,10 +526,6 @@ this.renderer.render(
 
 },
 };
-
-// ===========================================================
-// BOOT
-// ===========================================================
 
 window.addEventListener(
 "load",
